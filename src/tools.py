@@ -1,0 +1,501 @@
+""" """
+
+import argparse
+import json
+import logging
+import os
+import sqlite3
+import warnings
+import zipfile
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
+from typing import Any, cast
+
+import fiona
+import geopandas as gpd
+import networkx as nx
+import numpy as np
+import pandas as pd
+from pyproj import Transformer
+from shapely import geometry, ops
+from shapely.ops import transform
+from shapely.strtree import STRtree
+
+warnings.simplefilter(action="ignore", category=pd.errors.PerformanceWarning)
+
+
+def get_logger(name: str, log_level: int = logging.INFO) -> logging.Logger:
+    logging.basicConfig(level=log_level)
+    return logging.getLogger(name)
+
+
+logger = get_logger(__name__)
+
+DATA_DIR_ENV = "T2E_DATA_DIR"
+DEFAULT_DATA_DIR = "temp"
+
+
+def get_data_dir() -> Path:
+    """Return the base data directory from T2E_DATA_DIR env var, defaulting to 'temp'."""
+    data_dir = Path(os.environ.get(DATA_DIR_ENV, DEFAULT_DATA_DIR))
+    if not data_dir.is_dir():
+        data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir
+
+
+def validate_filepath(path: str | Path) -> str:
+    """ """
+    if not Path(path).exists():
+        raise ValueError(f"Path does not exist: {path}")
+    return str(path)
+
+
+def validate_directory(path: str | Path, create: bool = False) -> str | Path:
+    """ """
+    # handle if path is a file
+    if Path(path).is_file() or Path(path).suffix != "":
+        path = str(Path(path).parent)
+    # handle if path is not a dir
+    if not Path(path).is_dir():
+        if create:
+            Path(path).mkdir(parents=True, exist_ok=True)
+        else:
+            raise ValueError(f"Directory does not exist: {path}")
+    return path
+
+
+def gpkg_has_all_layers(gpkg_path: str, required_layers: list[str]) -> bool:
+    """Return True if the GeoPackage at `gpkg_path` contains all `required_layers`.
+
+    Uses fiona to list layers. Any error while inspecting the file is treated as "not all layers present".
+    """
+    try:
+        layers = fiona.listlayers(gpkg_path)
+    except Exception:
+        return False
+    return set(required_layers).issubset(set(layers))
+
+
+def convert_ndarrays(obj: Any) -> Any:
+    if isinstance(obj, np.ndarray):
+        return convert_ndarrays(obj.tolist())
+    if isinstance(obj, list | tuple):
+        return [convert_ndarrays(item) for item in obj]
+    if isinstance(obj, dict):
+        return {key: convert_ndarrays(value) for key, value in obj.items()}
+    if obj is None or obj == "":
+        return None
+    if isinstance(obj, str | int | float):
+        return obj
+    raise ValueError(f"Unhandled type when converting: {type(obj).__name__}")
+
+
+def col_to_json(obj: Any) -> str | None:
+    """Extracts JSON from a geoparquet / geopandas column"""
+    if obj is None or (isinstance(obj, str) and obj == ""):
+        return "null"
+    obj = convert_ndarrays(obj)
+    return json.dumps(obj)
+
+
+Connector = tuple[Any, geometry.Point]
+
+
+def split_street_segment(
+    line_string: geometry.LineString, connector_infos: list[Connector]
+) -> list[tuple[geometry.LineString, Connector, Connector]]:
+    """ """
+    # overture segments can span multiple intersections
+    # sort through and split until pairings are ready for insertion to the graph
+    node_segment_pairs: list[tuple[geometry.LineString, Connector, Connector]] = []
+    node_segment_lots: list[tuple[geometry.LineString, list[Connector]]] = [(line_string, connector_infos)]
+    # start iterating
+    while node_segment_lots:
+        old_line_string, old_connectors = node_segment_lots.pop()
+        # filter down connectors
+        new_connectors: list[tuple[str, geometry.Point]] = []
+        # if the point doesn't touch the line, discard
+        for _fid, _point in old_connectors:
+            if _point.distance(old_line_string) > 0:
+                continue
+            new_connectors.append((_fid, _point))
+        # if only two connectors
+        if len(new_connectors) == 2:
+            node_segment_pairs.append((old_line_string, new_connectors[0], new_connectors[1]))
+            continue
+        # look for splits
+        for _fid, _point in new_connectors:
+            splits = ops.split(old_line_string, _point)
+            # continue if an endpoint
+            if len(splits.geoms) == 1:
+                continue
+            # otherwise unpack
+            line_string_a, line_string_b = splits.geoms
+            # otherwise split into two bundles and reset
+            node_segment_lots.append((cast(geometry.LineString, line_string_a), new_connectors))
+            node_segment_lots.append((cast(geometry.LineString, line_string_b), new_connectors))
+            break
+    return node_segment_pairs
+
+
+def remove_overlapping_edges(
+    edges_gdf: gpd.GeoDataFrame,
+    buffer_tolerance: float = 0.5,
+) -> gpd.GeoDataFrame:
+    """Remove edges that are contained by or significantly overlap other edges.
+
+    Keeps longer edges when duplicates/overlaps are found.
+    """
+    # Build spatial index for fast lookups
+    sindex = STRtree(edges_gdf["geom"])
+    # Map positional indices from STRtree to actual DataFrame indices
+    pos_to_idx = {i: idx for i, idx in enumerate(edges_gdf.index)}
+    # Track indices to keep
+    indices_to_drop = set()
+
+    for idx, row in edges_gdf.iterrows():
+        if idx in indices_to_drop:
+            continue
+        geom = row.geom
+        geom_buffered = geom.buffer(buffer_tolerance)
+        # Query nearby candidates (returns positional indices)
+        nearby_positions = sindex.query(geom_buffered, predicate="intersects")
+        for nearby_pos in nearby_positions:
+            nearby_idx = pos_to_idx[nearby_pos]
+            if nearby_idx == idx or nearby_idx in indices_to_drop:
+                continue
+            other_geom = edges_gdf.loc[nearby_idx, "geom"]
+            # Check if current geom is contained/overlaps significantly
+            if geom.within(other_geom.buffer(buffer_tolerance)):
+                # Current is contained by other
+                indices_to_drop.add(idx)
+                break
+            elif other_geom.within(geom_buffered):
+                # Other is contained by current
+                indices_to_drop.add(nearby_idx)
+            elif geom_buffered.contains(other_geom):
+                # Significant overlap - keep longer one
+                if geom.length < other_geom.length:
+                    indices_to_drop.add(idx)
+                    break
+                else:
+                    indices_to_drop.add(nearby_idx)
+
+    # Filter out dropped indices
+    logger.info(f"Dropping {len(indices_to_drop)} overlapping edges out of {len(edges_gdf)} total edges.")
+    return edges_gdf.drop(index=list(indices_to_drop))
+
+
+def generate_graph(
+    nodes_gdf: gpd.GeoDataFrame,
+    edges_gdf: gpd.GeoDataFrame,
+    drop_road_types: list[str] | None = None,
+) -> nx.MultiGraph:
+    """ """
+    if drop_road_types is None:
+        drop_road_types = []
+    # create graph
+    multigraph = nx.MultiGraph()
+    # filter by boundary and build nx
+    # dedupe nodes by coordinate while keeping a lookup back to original ids
+    xy_to_id: dict[str, Any] = {}
+    id_to_merged: dict[Any, Any] = {}
+    for node_idx, node_geom in nodes_gdf["geom"].items():
+        node_geom_point = cast(geometry.Point, node_geom)
+        x = node_geom_point.x
+        y = node_geom_point.y
+        xy_key = f"{x}-{y}"
+        merged_key = xy_to_id.setdefault(xy_key, node_idx)
+        id_to_merged[node_idx] = merged_key
+        id_to_merged[str(node_idx)] = merged_key
+        if not multigraph.has_node(merged_key):
+            multigraph.add_node(
+                merged_key,
+                x=x,
+                y=y,
+            )
+    dropped_road_types = set()
+    kept_road_types = set()
+    for edge_idx, edges_data in edges_gdf.iterrows():
+        road_class = edges_data["class"]
+        if road_class in drop_road_types:
+            dropped_road_types.add(road_class)
+            continue
+        kept_road_types.add(road_class)
+        connectors_data = edges_data["connectors"]
+        if not isinstance(connectors_data, (list, tuple, np.ndarray)) or len(connectors_data) == 0:
+            continue
+        uniq_fids = set()
+        connector_fids: list[Any] = []
+        for connector in connectors_data:
+            connector_fid = connector.get("connector_id")
+            if connector_fid is not None:
+                connector_fids.append(connector_fid)
+        connector_infos: list[Connector] = []
+        missing_connectors = False
+        for connector_fid in connector_fids:
+            # skip malformed edges - this happens at boundary thresholds with missing nodes in relation to edges
+            merged_key = id_to_merged.get(connector_fid)
+            if merged_key is None or not multigraph.has_node(merged_key):
+                missing_connectors = True
+                break
+            # deduplicate
+            x, y = multigraph.nodes[merged_key]["x"], multigraph.nodes[merged_key]["y"]
+            if merged_key in uniq_fids:
+                continue
+            uniq_fids.add(merged_key)
+            # track
+            connector_point = geometry.Point(x, y)
+            connector_infos.append((merged_key, connector_point))
+        if missing_connectors is True:
+            continue
+        if len(connector_infos) < 2:
+            # logger.warning("Only one connector pair for edge")
+            continue
+        # extract levels, names, routes, highways
+        # do this once instead of for each new split segment
+        levels = set([])
+        if edges_data["level_rules"] is not None:
+            for level_info in edges_data["level_rules"]:
+                levels.add(level_info["value"])
+        names = []  # takes list form for nx
+        if edges_data["names"] is not None and "primary" in edges_data["names"]:
+            names.append(edges_data["names"]["primary"])
+        routes = set([])
+        if edges_data["routes"] is not None:
+            for routes_info in edges_data["routes"]:
+                if "ref" in routes_info:
+                    routes.add(routes_info["ref"])
+        is_tunnel = False
+        is_bridge = False
+        if edges_data["road_flags"] is not None:
+            for flags_info in edges_data["road_flags"]:
+                if "is_tunnel" in flags_info["values"]:
+                    is_tunnel = True
+                if "is_bridge" in flags_info["values"]:
+                    is_bridge = True
+        highways = []  # takes list form for nx
+        if road_class is not None and road_class not in ["unknown"]:
+            highways.append(road_class)
+        # split segments and build
+        edge_geom = cast(geometry.LineString, edges_data["geom"])
+        street_segs = split_street_segment(edge_geom, connector_infos)
+        for seg_geom, node_info_a, node_info_b in street_segs:
+            if not node_info_a[1].touches(seg_geom) or not node_info_b[1].touches(seg_geom):
+                raise ValueError(
+                    "Edge and endpoint connector are not touching. "
+                    f"See connectors: {node_info_a[0]} and {node_info_b[0]}"
+                )
+            # don't add duplicates
+            dupe = False
+            if multigraph.has_edge(node_info_a[0], node_info_b[0]):
+                edges = multigraph[node_info_a[0]][node_info_b[0]]
+                for _edge_idx, edge_val in dict(edges).items():
+                    if edge_val["geom"].buffer(1).contains(seg_geom):
+                        dupe = True
+                        break
+            if dupe is False:
+                multigraph.add_edge(
+                    node_info_a[0],
+                    node_info_b[0],
+                    edge_idx=edge_idx,
+                    geom=seg_geom,
+                    levels=list(levels),
+                    names=names,
+                    routes=list(routes),
+                    highways=highways,
+                    is_bridge=is_bridge,
+                    is_tunnel=is_tunnel,
+                )
+
+    return multigraph
+
+
+def generate_overture_schema() -> dict[str, list[str]]:
+    """Parse the Overture Maps places taxonomy into a schema dictionary.
+
+    Uses raw_landuse_schema.csv sourced from the Overture Maps schema repository:
+    https://github.com/OvertureMaps/schema/blob/0f9fdbcd88e7c0fc08e9c8c68d32cb334dd1d450/docs/schema/concepts/by-theme/places/overture_categories.csv
+    """
+    logger.info("Preparing Overture schema")
+    # Use path relative to this file, not cwd
+    overture_csv_file_path = Path(__file__).parent / "raw_landuse_schema.csv"
+    schema = {
+        # "eat_and_drink": [], - don't use because places overriden by more specific restaurant etc.
+        "restaurant": [],
+        "bar": [],
+        "cafe": [],
+        "accommodation": [],
+        "automotive": [],
+        "arts_and_entertainment": [],
+        "attractions_and_activities": [],
+        "active_life": [],
+        "beauty_and_spa": [],
+        "education": [],
+        "financial_service": [],
+        "private_establishments_and_corporates": [],
+        "retail": [],
+        "health_and_medical": [],
+        "pets": [],
+        "business_to_business": [],
+        "public_service_and_government": [],
+        "religious_organization": [],
+        "real_estate": [],
+        "travel": [],
+        "mass_media": [],
+        "home_service": [],
+        "professional_services": [],
+        # "community_services": [], - don't use because places overriden by more specific public_service_and_government
+    }
+    """
+    # Unused categories (not in schema):
+    {
+        "tower",
+        "structure_and_geography",
+        "boat_hire_service",
+        "weir",
+        "dam",
+        "forest",
+        "public_plaza",
+        "diving_instruction",
+        "electric_vehicle_charging_station",
+        "river",
+        "quay",
+        "island",
+        "canal",
+        "desert",
+        "pier",
+        "natural_hot_springs",
+        "aircraft_services_and_repair",
+        "eat_and_drink",  # use more specific restaurant, bar, cafe
+        "mountain",
+        "skyscraper",
+        "geologic_formation",
+        "nature_reserve",
+        "community_services",  # use more specific public_service_and_government
+        "bridge",
+    }
+    """
+    # read through csv and populate schema
+    other_categories = set([])
+    for category, _list_val in schema.items():
+        with open(overture_csv_file_path) as schema_csv:
+            # logger.info(f"Gathering category: {category}")
+            for line in schema_csv:
+                # remove header line
+                if "Overture Taxonomy" in line:
+                    continue
+                splits = line.split(";")
+                if "[" not in splits[1]:
+                    logger.info(f"Skipping line {line}")
+                    continue
+                cats = splits[1]
+                cats = cats.strip(" \n[]")
+                cats = cats.split(",")
+                # assign to category if found - only first match
+                if category in cats:
+                    schema[category].append(splits[0])
+                else:
+                    other_categories.update(cats)
+    # for checking
+    # logger.info(f"Other categories found: {other_categories}")
+
+    return schema
+
+
+def bounds_fid_type(value):
+    if value == "all":
+        return value
+    try:
+        return [int(value)]
+    except ValueError as e:
+        raise argparse.ArgumentTypeError(f"{value} is not a valid bounds_fid. It must be an integer or 'all'.") from e
+
+
+def reproject_geometry(geom, from_crs, to_crs):
+    """ """
+    transformer = Transformer.from_crs(from_crs, to_crs, always_xy=True)
+    reprojected_geom = transform(transformer.transform, geom)
+
+    return reprojected_geom
+
+
+def remove_layer_if_exists(gpkg_path: str | Path, layer: str) -> None:
+    """Remove a single layer from a GeoPackage without affecting other layers."""
+
+    if not os.path.exists(gpkg_path):
+        return
+    try:
+        with fiona.Env():
+            if layer in fiona.listlayers(gpkg_path):
+                logger.info(f"Replacing existing layer '{layer}' from {gpkg_path}")
+                fiona.remove(gpkg_path, layer=layer)
+                # Vacuum the database to reclaim space
+                conn = sqlite3.connect(str(gpkg_path))
+                conn.execute("VACUUM")
+                conn.close()
+    except Exception:
+        pass  # Layer doesn't exist or can't be removed
+
+
+def compress_gpkg(gpkg_path: str | Path, delete_original: bool = True) -> Path:
+    """Compress a GeoPackage to .gpkg.zip using ZIP_DEFLATED."""
+    gpkg_path = Path(gpkg_path)
+    if not gpkg_path.exists():
+        raise FileNotFoundError(f"GeoPackage not found: {gpkg_path}")
+    zip_path = gpkg_path.with_suffix(".gpkg.zip")
+    original_size = gpkg_path.stat().st_size
+    with zipfile.ZipFile(zip_path, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zf:
+        zf.write(gpkg_path, arcname=gpkg_path.name)
+    compressed_size = zip_path.stat().st_size
+    ratio = (1 - compressed_size / original_size) * 100 if original_size > 0 else 0
+    orig_mb = original_size / 1e6
+    comp_mb = compressed_size / 1e6
+    logger.info(f"Compressed {gpkg_path.name}: {orig_mb:.1f}MB -> {comp_mb:.1f}MB ({ratio:.0f}% reduction)")
+    if delete_original:
+        gpkg_path.unlink()
+    return zip_path
+
+
+def resolve_gpkg_path(gpkg_path: str | Path) -> str:
+    """Resolve a .gpkg path, falling back to .gpkg.zip with a zip:// URI if the original doesn't exist."""
+    gpkg_path = Path(gpkg_path)
+    if gpkg_path.exists():
+        return str(gpkg_path)
+    zip_path = gpkg_path.with_suffix(".gpkg.zip")
+    if zip_path.exists():
+        return f"zip://{zip_path}!{gpkg_path.name}"
+    raise FileNotFoundError(f"Neither {gpkg_path} nor {zip_path} found")
+
+
+def bundle_zip(
+    source_dirs: list[Path],
+    output_path: str | Path,
+    glob_pattern: str = "*.gpkg.zip",
+    extra_files: list[Path] | None = None,
+) -> Path:
+    """Bundle per-city zip files from source directories into a parent zip archive for distribution."""
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    collected: list[Path] = []
+    for source_dir in source_dirs:
+        if source_dir.is_dir():
+            collected.extend(sorted(source_dir.glob(glob_pattern)))
+    if extra_files:
+        for f in extra_files:
+            if f.exists():
+                collected.append(f)
+    if not collected:
+        logger.warning(f"No files found to bundle into {output_path}")
+        return output_path
+    # Use ZIP_STORED since contents are already compressed
+    with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_STORED) as zf:
+        for file_path in collected:
+            zf.write(file_path, arcname=file_path.name)
+            logger.info(f"Bundled: {file_path.name}")
+    total_size = output_path.stat().st_size
+    logger.info(f"Created distribution bundle: {output_path} ({total_size / 1e6:.1f}MB, {len(collected)} files)")
+    return output_path

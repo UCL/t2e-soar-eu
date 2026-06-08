@@ -1,0 +1,23 @@
+{
+  "n_cities_total": 626,
+  "dataset_total_compressed_gb": 35,
+  "dataset_min_mb": 3.5,
+  "dataset_max_gb": 1.2,
+  "dataset_mean_mb": 56,
+  "n_countries": 28,
+  "n_cities_with_heights_raster": 611,
+  "bldg_heights_age_years": 14,
+  "n_ref_cities": 116,
+  "n_ref_cities_fr": 73,
+  "n_ref_cities_nl": 43,
+  "n_non_ref_cities": 510,
+  "n_cities_low_height": 94,
+  "n_cities_no_height": 20,
+  "median_height_coverage": 71,
+  "median_block100_coverage": 74,
+  "n_cities_no_blocks": 24,
+  "n_cities_no_employment": 185,
+  "poi_near_dist_good_m": 800,
+  "poi_near_dist_other_m": 800,
+  "poi_near_dist_accom_m": 1200
+}

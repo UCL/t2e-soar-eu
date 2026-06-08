@@ -1,0 +1,19 @@
+\begin{table}[ht]
+  \centering
+  \caption{Within-city $R^2$ by predictor family. All models use city-demeaned
+    (within-city) estimation with 10\% spatial subsampling. Population density's
+    marginal $\Delta R^2$ when added to the full model is 0.000 for every outcome.}
+  \label{tab:decomposition}
+  \small
+  \begin{tabular}{lrrrrrr}
+    \toprule
+    Model & Retail & Eat \& drink & Education & Health & Green space & Trees \\
+    \midrule
+    Pop.~density alone & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 & 0.000 \\
+    3 morph.~axes alone & 0.173 & 0.203 & 0.154 & 0.177 & 0.106 & 0.019 \\
+    Network alone & 0.100 & 0.129 & 0.143 & 0.137 & 0.040 & 0.002 \\
+    3 axes + network & 0.213 & 0.257 & 0.227 & 0.241 & 0.129 & 0.023 \\
+    Everything & 0.213 & 0.257 & 0.227 & 0.241 & 0.130 & 0.023 \\
+    \bottomrule
+  \end{tabular}
+\end{table}

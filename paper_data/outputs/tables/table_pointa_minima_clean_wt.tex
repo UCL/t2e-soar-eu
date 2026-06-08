@@ -1,0 +1,25 @@
+\begin{tabular}{@{}lcccccccccccc@{}}
+\toprule
+\textbf{Category} & \multicolumn{4}{c}{\textbf{Counts}} & \multicolumn{4}{c}{\textbf{Hotspots}} & \multicolumn{4}{c}{\textbf{Nearest}} \\
+\cmidrule(lr){2-5}
+\cmidrule(lr){6-9}
+\cmidrule(lr){10-13}
+ & $\geq$70\% & $\geq$75\% & $\geq$80\% & $\geq$85\% & $\geq$70\% & $\geq$75\% & $\geq$80\% & $\geq$85\% & $\geq$70\% & $\geq$75\% & $\geq$80\% & $\geq$85\% \\
+\midrule
+\textit{Within-city} & \multicolumn{4}{c}{\footnotesize rank concordance} & \multicolumn{4}{c}{\footnotesize top-10\% overlap} & \multicolumn{4}{c}{\footnotesize nearest F1} \\
+Retail & 200 & 400 & 800 & 1200 & 800 & 800 & 1200 & 1600 & 400 & 400 & 400 & 800 \\
+Eat \& Drink & 200 & 200 & 800 & 1200 & 400 & 800 & 800 & 1200 & 400 & 400 & 800 & 800 \\
+Business \& Services & 400 & 800 & 1200 & --- & 800 & 800 & 1200 & 1600 & 200 & 400 & 400 & 400 \\
+Education & 200 & 400 & 1200 & --- & --- & --- & --- & --- & 400 & 400 & 800 & 800 \\
+Health \& Medical & 200 & 400 & 800 & --- & --- & --- & --- & --- & 400 & 400 & 800 & 800 \\
+Accommodation & 400 & 1600 & --- & --- & 1200 & 1600 & --- & --- & 800 & 800 & 1200 & 1200 \\
+\midrule
+\textit{Between-city} & \multicolumn{4}{c}{\footnotesize rank concordance (city medians)} & \multicolumn{4}{c}{\footnotesize rank concordance (hotspot intensity)} & \multicolumn{4}{c}{\footnotesize harmonic-mean share} \\
+Retail & 1200 & 1600 & --- & --- & 800 & --- & --- & --- & 400 & 800 & 800 & 800 \\
+Eat \& Drink & --- & --- & --- & --- & 400 & 800 & --- & --- & 800 & 800 & 800 & 800 \\
+Business \& Services & 1200 & 1600 & --- & --- & 200 & 1600 & --- & --- & 400 & 400 & 400 & 400 \\
+Education & 400 & 400 & 400 & --- & --- & --- & --- & --- & 800 & 800 & 800 & 1200 \\
+Health \& Medical & 400 & 800 & 800 & --- & 200 & 200 & --- & --- & 800 & 800 & 800 & 800 \\
+Accommodation & 1200 & --- & --- & --- & 200 & 200 & 200 & --- & 1200 & 1200 & 1200 & 1200 \\
+\bottomrule
+\end{tabular}

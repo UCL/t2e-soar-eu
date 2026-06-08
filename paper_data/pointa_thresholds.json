@@ -1,0 +1,34 @@
+{
+  "name": "PointA thresholds (frozen)",
+  "frozen_date": "2026-02-14",
+  "version": 4,
+  "ci": {
+    "alpha": 0.05,
+    "n": 2000,
+    "seed": 123,
+    "label_by_ci": true
+  },
+  "distribution_spearman": {
+    "supported_ge": 0.80,
+    "caution_ge": 0.60,
+    "note": "Within-city node-level Spearman rho. Reference values from displacement analysis: at rho>=0.80, MAPD=7.6 (74% skill), Q-flip=35.1%."
+  },
+  "benchmark_rank": {
+    "supported_ge": 0.70,
+    "caution_ge": 0.50,
+    "note": "Between-city weighted POA on city-level median(log1p(count)). Use as guidance for broad comparative ordering rather than exact city rank."
+  },
+  "hotspot_top10": {
+    "supported_ge": 0.6,
+    "caution_ge": 0.4
+  },
+  "benchmark_hotspot": {
+    "supported_ge": 0.70,
+    "caution_ge": 0.50,
+    "note": "Between-city weighted POA on city-level top-10%-median(log1p(count)). Same broad-ordering rationale as benchmark_rank."
+  },
+  "nearest_within_f1": {
+    "supported_ge": 0.7,
+    "caution_ge": 0.6
+  }
+}

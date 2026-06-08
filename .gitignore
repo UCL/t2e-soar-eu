@@ -1,0 +1,82 @@
+# Project
+temp
+*.tmp
+cache
+_archive/
+**/deprecated/
+CLAUDE.md
+TODO.md
+.claude/
+*.csv
+!src/raw_landuse_schema.csv
+
+# Regenerable pipeline intermediates
+paper_data/outputs/csv/
+paper_data/manuscript.pdf
+paper_research/*.pdf
+paper_research/code/atlas_figures/outputs/
+
+# LaTeX temporary files
+*.aux
+*.bbl
+*.blg
+*.idx
+*.ind
+*.lof
+*.lot
+*.out
+*.toc
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.fls
+*.log
+*.fdb_latexmk
+*.snm
+*.synctex.gz
+*.synctex(busy)
+*.nav
+*.vrb
+*.spl
+*.dvi
+paper/*.pdf
+build_log.txt
+
+# macOS
+.DS_Store
+
+# Geospatial
+*.gpkg*
+*.*parquet*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+
+# Environments
+.env
+.venv
+
+# Testing
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Type checkers
+.mypy_cache/
+.pytype/
+.pyre/
+
+# Editors / tools
+.ipynb_checkpoints
+.ruff_cache/

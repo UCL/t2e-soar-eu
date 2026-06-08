@@ -1,0 +1,4 @@
+# Exploratory figures (scratch work)
+fig_*.pdf
+# But track supplement figures
+!supplement/fig_*.pdf
