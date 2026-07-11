@@ -205,7 +205,7 @@ This repository depends on copy-left open source packages licensed as AGPLv3 and
 
 ## Papers
 
-- [Data paper](paper_data/README.md) — SOAR-EU dataset description and POI validation (Data in Brief)
+- [Data paper](paper_data/README.md) — SOAR-EU dataset description and POI validation (Scientific Data)
 - [Atlas paper](paper_research/README.md) — Morphological typology of European cities (CEUS)
 
 ## Citation

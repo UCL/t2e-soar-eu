@@ -36,6 +36,8 @@ paper_data/code/
   s08_make_poi_source_comparison_figure.py  # POI spatial comparison figure
   s09_make_pipeline_figure.py            # pipeline diagram
   s10_make_pointa_figures.py             # Point A figures and minima tables
+
+  fig_metric_families.py                 # metric-families overview schematic (no data inputs)
 ```
 
 ## Notes
@@ -44,5 +46,5 @@ paper_data/code/
 - Manuscript-ready artifacts live in `paper_data/outputs/`.
 - `s05` produces `completeness_coverage.csv`; `s06` reads this for manuscript macros.
 - `s05a` writes building-source CSVs under `OUTPUT_DIR/csv/`; `s05c` consumes them to produce `table_building_source_country.tex`, `table_building_metric_sensitivity.tex`, `fig_building_source_map.pdf`, and `fig_building_source_sensitivity.pdf`.
-- `s04` loads frozen thresholds from `paper_data/pointa_thresholds.json` when present, otherwise falls back to hardcoded defaults.
+- `s04` loads frozen thresholds from `paper_data/code/pointa_thresholds.json` when present, otherwise falls back to hardcoded defaults.
 - Scripts are numbered by dependency order but each runs independently.

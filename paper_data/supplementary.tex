@@ -1,0 +1,76 @@
+\documentclass{elsarticle}
+
+% Standalone Supplementary Information for the Scientific Data submission.
+% Shares its body (supplementary_sections.tex) with manuscript.tex, which
+% embeds the same sections as an appendix in the combined working PDF.
+% Compile with: latexmk -pdf supplementary.tex
+
+\providecommand{\ZenodoDoi}{10.5281/zenodo.18961227}
+\providecommand{\ZenodoUrl}{https://doi.org/10.5281/zenodo.18961227}
+
+\usepackage[utf8]{inputenc}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\PassOptionsToPackage{hyphens}{url}\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{wrapfig}
+\usepackage{amssymb}
+\usepackage{pdflscape}
+
+% Allow line breaks after underscores in long \texttt{} filenames.
+\renewcommand{\_}{\textunderscore\allowbreak}
+
+% Auto-generated statistics macros (from paper_stats.json)
+\input{outputs/paper_macros}
+
+% Consistent table column types
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
+
+\journal{Scientific Data}
+
+\begin{document}
+
+\begin{frontmatter}
+
+  \title{Supplementary Information for: SOAR-EU: A Scalable, Open, Automatable, and Reproducible European Urban Dataset}
+
+  \author[spacesyntax]{Gareth Simons\corref{cor1}}
+  \ead{gareth.simons@ucl.ac.uk}
+  \cortext[cor1]{Corresponding author}
+
+  \author[spacesyntax]{Kayvan Karimi}
+  \author[spacesyntax]{Sepehr Zhand}
+
+  \affiliation[spacesyntax]{organization={Space Syntax Laboratory, UCL Bartlett School of Architecture},
+    addressline={22 Gordon Street},
+    city={London},
+    country={United Kingdom}
+  }
+
+\end{frontmatter}
+
+\appendix
+\renewcommand{\thesection}{S\arabic{section}}
+
+\input{supplementary_sections}
+
+\begin{thebibliography}{2}
+
+  \bibitem{sirene2026} INSEE. Base SIRENE des entreprises et de leurs \'{e}tablissements (SIREN, SIRET) [dataset]. \url{https://www.data.gouv.fr/en/datasets/base-sirene-des-entreprises-et-de-leurs-etablissements-siren-siret/} (2026). Open License 2.0 (Etalab).
+
+  \bibitem{bag2026} Kadaster. BAG 2.0 Extract [dataset]. \url{https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract} (2026). CC Public Domain Mark 1.0.
+
+\end{thebibliography}
+
+\end{document}

@@ -1,5 +1,5 @@
 """
-Configuration for Data in Brief paper.
+Configuration for the SOAR-EU data paper (Scientific Data).
 
 Contains categories, mappings, colors, plot settings, and paper-specific paths.
 """

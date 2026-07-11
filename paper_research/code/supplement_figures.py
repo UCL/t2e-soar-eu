@@ -402,6 +402,10 @@ with open(MACRO_SUPP, "w") as mf:
     if green_cem is not None:
         mf.write(_mac("matchedGreenLoss", abs(green_cem["effect_m"])))
 
+    mf.write("\n% ── Analysis set size (streets/cities with complete predictors) ──\n")
+    mf.write(_mac("nAnalysisCities", n_cities))
+    mf.write(_mac("nAnalysisMStreets", n_analysis / 1e6, ".1f"))
+
 print(f"  Saved {MACRO_SUPP}")
 
 # ============================================================================

@@ -6,6 +6,15 @@ Use this folder as:
 - `paper_data/code/` for reproducible generation scripts.
 - `paper_data/code/README.md` for the canonical script execution order and Point A step-by-step flow.
 
+## Scientific Data submission package
+
+- `manuscript.tex` — main Data Descriptor (compiles with the SI appended, for a combined working PDF).
+- `supplementary_sections.tex` — SI body (S1–S5), shared between the manuscript and the standalone SI.
+- `supplementary.tex` — standalone Supplementary Information PDF for submission (`latexmk -pdf supplementary.tex`).
+- `outputs/tables/supplementary_table_1_streets_schema.csv` — the S1 schema as a machine-readable Supplementary Table (Scientific Data asks for tables over one A4 page as csv/xlsx); regenerate with `code/s11_export_s1_schema_csv.py`.
+- `cover_letter.md` — cover letter draft (suggested reviewers to be filled in).
+- Before submission: publish the Zenodo deposit (the reserved DOI currently returns 404 because the record is still a draft).
+
 Recommended separation of concerns:
 
 - Keep heavy/intermediate outputs in `$T2E_DATA_DIR/paper_data_outputs`.

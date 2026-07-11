@@ -116,12 +116,12 @@ METADATA = {
             "<h4>Processing</h4>"
             "<p>Processing pipeline: "
             "<a href='https://github.com/UCL/t2e-soar-eu'>github.com/UCL/t2e-soar-eu</a> "
-            "(AGPL-3.0, v1.1.0). CRS: EPSG:3035 (ETRS89-LAEA Europe).</p>"
+            "(AGPL-3.0, v1.3.0). CRS: EPSG:3035 (ETRS89-LAEA Europe).</p>"
             "<p>Funded by the European Union's Horizon Europe Research and "
             "Innovation Programme under Grant Agreement No. 101078890.</p>"
         ),
-        "version": "1.2.0",
-        "publication_date": "2026-05-29",
+        "version": "1.3.0",
+        "publication_date": "2026-07-17",
         "resource_type": {"id": "dataset"},
         "creators": [
             {
@@ -192,7 +192,7 @@ METADATA = {
         "code:programmingLanguage": {"id": "python"},
         "code:developmentStatus": {"id": "active"},
         "code:runtimePlatform": "Python 3.12",
-        "code:version": "v1.2.0",
+        "code:version": "v1.3.0",
     },
 }
 

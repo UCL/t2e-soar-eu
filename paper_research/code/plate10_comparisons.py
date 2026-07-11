@@ -4,8 +4,8 @@ Plate 10 — Comparisons.
 Four paired comparisons using difference arrows, each reporting a consistent
 10-variable set (FSI, Height, GSI, Frontage, MAD, StreetDens, Retail,
 Eat & drink, Trees, Green).  Dots are colour-coded per entity; connecting
-lines in charcoal.  Entity names and composite symbols are left-aligned near
-the metric labels.
+lines in charcoal.  Entity names and city details are left-aligned in the
+left margin near the metric labels.
 """
 
 import sys
@@ -44,7 +44,7 @@ LINE_GREY = "#B0ADA8"  # connecting lines
 # ── All available metrics ─────────────────────────────────────────────
 ALL_METRICS = {
     "fsi": {"col": "cc_block_far_median_400_wt", "label": "Floor space index (400m)", "higher_better": True},
-    "height": {"col": "cc_mean_height_median_200_wt", "label": "Building height (200m)", "higher_better": True},
+    "height": {"col": "cc_mean_height_median_400_wt", "label": "Building height (400m)", "higher_better": True},
     "gsi": {"col": "cc_block_covered_ratio_median_400_wt", "label": "Ground space index (400m)", "higher_better": True},
     "swr": {"col": "frontage_max", "label": "Street-frontage ratio", "higher_better": True},
     "irregularity": {"col": "cc_orientation_mad_400_wt", "label": "Orientation MAD (400m)", "higher_better": None},

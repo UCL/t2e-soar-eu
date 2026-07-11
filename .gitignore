@@ -13,8 +13,10 @@ TODO.md
 # Regenerable pipeline intermediates
 paper_data/outputs/csv/
 paper_data/manuscript.pdf
+paper_data/supplementary.pdf
 paper_research/*.pdf
 paper_research/code/atlas_figures/outputs/
+paper_research/outputs/atlas/supplement/fig_dose_response.pdf
 
 # LaTeX temporary files
 *.aux
@@ -42,8 +44,6 @@ paper_research/code/atlas_figures/outputs/
 *.vrb
 *.spl
 *.dvi
-paper/*.pdf
-build_log.txt
 
 # macOS
 .DS_Store

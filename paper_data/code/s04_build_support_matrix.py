@@ -435,7 +435,7 @@ def main() -> int:
     out_support_matrix_csv = OUTPUT_DIR / "csv" / "pointa_support_matrix.csv"
     out_minima_csv = OUTPUT_DIR / "csv" / "pointa_support_minima.csv"
     out_minima_tex = TABLE_DIR / "table_pointa_support_minima.tex"
-    thresholds_json = PAPER_DATA_DIR / "pointa_thresholds.json"
+    thresholds_json = PAPER_DATA_DIR / "code" / "pointa_thresholds.json"
     out_thresholds_used_json = OUTPUT_DIR / "csv" / "pointa_support_thresholds_used.json"
 
     # Defaults.

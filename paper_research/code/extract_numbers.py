@@ -33,7 +33,7 @@ SVC_COLS = {
 
 # ── Morphometric columns ──
 MORPH_COLS = {
-    "height": "cc_mean_height_median_200_wt",
+    "height": "cc_mean_height_median_400_wt",
     "volume": "cc_mean_volume_median_200_wt",
     "area": "cc_mean_area_median_200_wt",
     "perimeter": "cc_mean_perimeter_median_200_wt",

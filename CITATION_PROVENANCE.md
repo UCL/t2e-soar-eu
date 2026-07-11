@@ -58,7 +58,7 @@ A reference-by-reference record for both papers: the **gist** of each cited work
 
 ---
 
-## Atlas (38 references)
+## Atlas (42 references)
 
 1. **`angel2016atlas`** — Angel et al. (2016), *Atlas of Urban Expansion*. Satellite-based mapping of urban extent and growth worldwide. *Used* as related work in large-sample comparative morphology. ✅
 
@@ -120,7 +120,7 @@ A reference-by-reference record for both papers: the **gist** of each cited work
 
 30. **`simons2023cityseer`** — Simons (2023), cityseer, *Env. Plan. B* 50(5). *Used* (L60) as the metric-computation engine. ✅
 
-31. **`simons2024soar`** — Simons, Karimi & Zhand, the companion SOAR-EU **data paper** (submitted to *Data in Brief*). *Used* throughout for sources, the POI source-substitution validation, and the SWR-vs-frontage robustness detail. ⚠️ the authors' own companion paper, in submission — not independently verifiable; ensure cross-paper "submitted to" states are correct at submission.
+31. **`simons2024soar`** — Simons, Karimi & Zhand, the companion SOAR-EU **data paper** (submitted to *Scientific Data*). *Used* throughout for sources, the POI source-substitution validation, and the SWR-vs-frontage robustness detail. ⚠️ the authors' own companion paper, in submission — not independently verifiable; ensure cross-paper "submitted to" states are correct at submission.
 
 32. **`stanilov2007post`** — Stanilov (ed., 2007), *The Post-Socialist City* (Springer). CEE socialist-era modernist housing estates (slab/tower blocks in open space). *Used* (L142, L160, L261) for the socialist-estate fabric and post-socialist context — well supported. ✅
 
@@ -142,6 +142,20 @@ A reference-by-reference record for both papers: the **gist** of each cited work
 - **Re-attributed** the "perimeter block as characteristic European fabric" claim from Caniggia & Maffei to **Panerai et al. (2004)** — `panerai2004urban` added.
 - **Re-targeted** `faludi1994rule` to the Dutch plan-led claim and **removed** `buitelaar2011plan` (which argues the opposite of the claim it backed); softened the polder-drainage statement.
 - **Added citations** for two previously uncited claims: Polish estate greenery (`starczewski2024green`) and Nordic forest retention (`hautamaki2022modern`).
+
+## Changes applied in the July 2026 revision round (both papers)
+
+Four references were **added to the atlas** for the new "Applications and planning debates" discussion subsection; each was verified against the publisher's record (authors, title, venue, volume, pages, DOI all match):
+
+- **39. `moreno2021fifteen`** — Moreno, Allam, Chabaud, Gall & Pratlong (2021), "Introducing the '15-Minute City'," *Smart Cities* 4(1), 93–111. DOI 10.3390/smartcities4010006. *Used* (Discussion) for the 15-minute-city premise that everyday services should be reachable on foot. ✅
+- **40. `neuman2005compact`** — Neuman (2005), "The Compact City Fallacy," *J. Plan. Educ. Res.* 25(1), 11–26. DOI 10.1177/0739456X04270466. *Used* (Discussion) for the compact-city debate weighing access gains against amenity costs. ✅
+- **41. `cervero1997travel`** — Cervero & Kockelman (1997), "Travel demand and the 3Ds," *Transp. Res. D* 2(3), 199–219. DOI 10.1016/S1361-9209(97)00009-6. *Used* (Discussion) for the density/diversity/design framing of TOD's design dimension. ✅
+- **42. `gilescorti2016city`** — Giles-Corti et al. (2016), "City planning and population health: a global challenge," *The Lancet* 388(10062), 2912–2924. DOI 10.1016/S0140-6736(16)30066-6. *Used* (Discussion) for the healthy-cities call for comparable pedestrian-scale indicators. ✅
+
+Other reference changes this round:
+- **Fixed an orphan bibitem**: `yap2023global` was listed in the atlas bibliography but not cited in the text; now cited in §1.1 alongside `araldi2019street` for work integrating across spatial-feature families (matching its documented use above).
+- **Data paper references reformatted to Nature style** (Scientific Data requirement): numbered, abbreviated journals, volume/pages/(year), DOIs as https URLs, *et al.* beyond five authors (`abdeldayem2026`). All bibliographic values carried over unchanged from the verified entries above; `openshaw1984` now names the publisher (Geo Books) per Nature book style.
+- **Cross-references updated** for the new journal targets: `simons2024soar` now reads "submitted to *Scientific Data*"; the companion-article pointer in the data paper names *Computers, Environment and Urban Systems*.
 
 ## Residual notes (judgement calls, not errors)
 - `berghauser2019systematic` (atlas L84): the corrected source is a quantitative-typology paper; confirm it supports the specific "clustering is a documented challenge" framing, or add a clustering-methods reference.

@@ -1,19 +1,18 @@
 \documentclass{elsarticle}
 
-% Build-mode switch:
-%   preprintmode=0 (default): Data in Brief submission formatting
-%   preprintmode=1           : generic/archive formatting (e.g., arXiv)
-% You can override this at build time, e.g.:
-%   pdflatex '\\def\\preprintmode{1}\\input{manuscript.tex}'
+% Formatted as a Scientific Data "Data Descriptor". Section order follows the
+% journal's required structure: Background & Summary; Methods; Data Records;
+% Technical Validation; Usage Notes; Data Availability; Code Availability;
+% References; Author Contributions; Competing Interests; Acknowledgements;
+% Funding; Ethics. Scientific Data provides no LaTeX template; headings are
+% reproduced per the submission guidelines. Constraints checked at last edit:
+% title <= 110 characters; abstract <= 170 words; <= 8 main figures and <= 10
+% main tables recommended; figure legends <= 350 words; Nature reference style.
 %
 % If you hit a cryptic build error after edits (e.g., "Runaway argument" while
 % writing labels/outlines), remove auxiliary files and rebuild:
 %   rm -f manuscript.aux manuscript.out manuscript.toc manuscript.bbl manuscript.blg
 %   pdflatex manuscript.tex && pdflatex manuscript.tex
-\providecommand{\preprintmode}{0}
-\newcommand{\IfPreprintTF}[2]{\ifnum\preprintmode=1\relax #1\else #2\fi}
-\newcommand{\SpecsTableHeading}{\IfPreprintTF{Dataset summary}{Specifications Table}}
-\newcommand{\ValueHeading}{\IfPreprintTF{Value of the dataset}{Value of the Data}}
 
 % Submission placeholders (override at build time if desired)
 \providecommand{\ZenodoDoi}{10.5281/zenodo.18961227}
@@ -60,7 +59,7 @@
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 \newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
 
-\IfPreprintTF{}{\journal{Data in Brief}}
+\journal{Scientific Data}
 
 \begin{document}
 
@@ -98,72 +97,205 @@
 \end{frontmatter}
 
 %% ============================================================================
-%% SPECIFICATIONS TABLE
+%% BACKGROUND & SUMMARY
 %% ============================================================================
-\section*{\SpecsTableHeading}
+\section*{Background \& Summary}
 
-\begin{table}[!htbp]
+Comparative urban research requires consistent measurement across cities, yet constructing spatial analytic datasets remains resource-intensive: each project must assemble, clean, and harmonise boundaries, street networks, buildings, land cover, points of interest, and census data before analysis can begin. Related resources include GHSL \cite{pesaresi2023} global built-up surface mapping, Boeing's \cite{boeing2020} analysis of US street networks, Fleischmann et al.'s \cite{fleischmann2022} numerical taxonomy of urban form, and Yap and Biljecki's \cite{yap2023} feature-rich network dataset for 50 cities worldwide. Simons's \cite{simons2021thesis} pedestrian-scale integration of street networks, land use, and census demographics across 931 cities and towns in Great Britain is a direct methodological precursor to the present continental-scale dataset.
+
+SOAR-EU (Scalable, Open, Automatable, Reproducible --- European Urban) complements these by providing ready-to-use pedestrian-scale metrics for \NCitiesTotal{} urban centres across \NCountries{} European countries (EU-27 except Cyprus, plus Norway and Switzerland). The dataset integrates GHS-UCDB boundaries, Eurostat census grids, Copernicus land cover, tree canopy and building heights, and Overture Maps street networks, buildings, and POIs. Over 100 metrics are pre-computed on natural street segments across multiple spatial scales (200--9,600\,m) using the cityseer \cite{simons2023} Python package, spanning network centrality, land-use and infrastructure accessibility, mixed-use diversity, building and block morphology, green-space and tree-canopy proximity, and demographics. The dataset is intended as shared research infrastructure: because all \NCitiesTotal{} cities are processed with identical methods, parameters, and sources, measured differences reflect the urban fabric rather than differing analytical choices, and the data-assembly work that confines most pedestrian-scale research to single cities does not need to be repeated by each user. Comparability is nonetheless bounded by the geographic consistency of the underlying open sources (Section~\ref{sec:provenance}): broad distributional comparison across regions and city groups is more strongly supported than exact city-by-city ranking, particularly for POI-derived metrics outside the validated French and Dutch reference set.
+
+Two design decisions distinguish the dataset from a collection of pre-computed indicators. First, every metric family is computed at multiple network-distance thresholds, so users can match the measurement scale to the process under study and test sensitivity to that choice \cite{openshaw1984} rather than inherit a single fixed catchment; all accessibility measures follow pedestrian routes over the network rather than Euclidean buffers \cite{apparicio2008}, and both unweighted and distance-weighted aggregations are provided. Second, the reliability of the most uncertain input, the Overture POI layer, is characterised rather than assumed: a source-substitution analysis recomputes POI-derived metrics against official national registries in \NRefCities{} French and Dutch reference cities, yielding task- and scale-specific guidance on where the metrics support within-city analysis and where they support between-city comparison (Technical Validation; Usage Notes).
+
+The dataset supports research designs that were previously costly to mount: benchmarking service provision across jurisdictions, for instance quantifying how far each street is from 15-minute-city conditions; comparative studies of how planning regimes shape walkability and green-space access; public-health and environmental-exposure studies requiring pedestrian-scale indicators across many cities; and the training and validation of models that predict urban outcomes from form. A companion research article develops one such application, a morphological classification of the \NCitiesTotal{} cities and its association with service access and demographic composition (G.\ Simons, K.\ Karimi, S.\ Zhand, A Morphological Atlas of European Urbanism, submitted to \textit{Computers, Environment and Urban Systems}).
+
+Data are distributed as per-city GeoPackages bundled by country on Zenodo \cite{soar2026}, with a boundary index and per-column completeness report (Data Records). The processing pipeline is open source and re-runnable end to end in approximately one day on a workstation-class machine, so the dataset can be regenerated or extended as upstream sources release new versions (Methods).
+
+
+
+%% ============================================================================
+%% METHODS
+%% ============================================================================
+\section{Methods}
+
+Sections~\ref{sec:study-area}--\ref{sec:implementation} describe the processing pipeline (Figure~\ref{fig:pipeline}); Section~\ref{sec:provenance} discusses data provenance and source quality; Section~\ref{sec:regeneration} describes how the dataset is regenerated or extended. The resulting data products are described under Data Records, and the source-substitution analysis of POI-derived metrics under Technical Validation. All source datasets were ingested during mid 2026 using the release versions indicated in Table~\ref{tab:sources}; the final dataset snapshot used for validation and distribution corresponds to Zenodo deposit \ZenodoDoi{}.
+
+\begin{figure}[htbp]
   \centering
+  \includegraphics[width=0.85\textwidth]{outputs/figures/fig_pipeline.pdf}
+  \caption{\textbf{SOAR-EU processing pipeline.} Four open data sources (blue) feed four processing stages (yellow) that produce three GeoPackage output layers per city (green). Stage~1 filters GHS-UCDB boundaries to the EU and labels cities; Stages~2--5 ingest Copernicus and Overture data in parallel; Stage~6 computes all metrics using the ingested layers, Eurostat census data, and the filtered boundaries.}
+  \label{fig:pipeline}
+\end{figure}
+
+\subsection{Study Area Definition}
+\label{sec:study-area}
+
+Urban boundaries derive from the Global Human Settlement Layer Urban Centre Database (GHS-UCDB) R2024A \cite{ghsl2024}, which defines urban centres using the Degree of Urbanisation (DEGURBA) methodology: contiguous 1$\times$1~km grid cells with $\geq$1,500 inhabitants/km\textsuperscript{2} (or $\geq$50\% built-up surface) and cumulative population $\geq$50,000. Filtering to continental Europe (EPSG:3035) yielded \NCitiesTotal{} urban centres. All meet the $\geq$50,000 population threshold and thus correspond to cities or major urban agglomerations rather than small towns. City names are taken directly from the GHS-UCDB \texttt{GC\_UCN\_MAI\_2025} (Main Urban Centre Name) attribute. Because GHS-UCDB boundaries reflect population density contours rather than administrative units, assigned names may not always correspond to commonly used city names (e.g., a district name rather than the parent municipality).
+
+\subsection{Data Sources}
+
+Table~\ref{tab:sources} summarises input datasets.
+
+Street networks from Overture Maps \cite{overture2026} were cleaned via cityseer \cite{simons2023}, following the automated network-cleaning procedure described in \cite{abdeldayem2026}: disconnected components were removed and degree-2 nodes collapsed. Level-aware processing prevents incorrect merging at bridges or tunnels. The 8\,m cleaning tolerance is deliberately conservative, prioritising consistent processing across all cities over city-specific fine-tuning.
+
+POI categories from Overture's ``places'' theme were mapped to 11 analytical classes (Table~\ref{tab:landuse}; derivation in Section~\ref{sec:landuse-access}), and infrastructure points from Overture's infrastructure theme to three categories (transport, parking, street furniture; Table~\ref{tab:infrastructure}). Land cover and tree canopy derive from Copernicus Urban Atlas \cite{eea2021ua} and Street Tree Layer \cite{eea2021stl} respectively. Building heights were sampled from the Digital Height Model \cite{eea2012bh}.
+
+Demographics from Eurostat Census Grid 2021 \cite{eurostat2024} include population, employment, age structure, nationality, and migration at 1~km\textsuperscript{2} resolution.
+
+\begin{table}[H]
+  \centering
+  \caption{Input data sources and their roles in the processing pipeline.}
+  \label{tab:sources}
   \small
-  \begin{tabular}{@{}L{3.2cm}L{8.3cm}@{}}
+  \begin{tabular}{@{}L{2.5cm}L{1.6cm}L{1cm}L{2.8cm}L{3.2cm}@{}}
     \toprule
-    \textbf{Subject} & Geography, Urban Studies, Geospatial Data Science \\
+    \textbf{Dataset} & \textbf{Source} & \textbf{Year} & \textbf{Licence} & \textbf{Use} \\
     \midrule
-    \textbf{Specific subject area} & Urban morphology, pedestrian accessibility, land-use diversity \\
-    \midrule
-    \textbf{Type of data} & Table (geospatial vector); Processed, filtered (GeoPackage format) \\
-    \midrule
-    \textbf{Data format} & GeoPackage (.gpkg); one ZIP archive per country bundling the city GeoPackages, plus a boundary index file \\
-    \midrule
-    \textbf{How data was acquired} & Programmatic extraction and processing of open geospatial sources using Python (cityseer, momepy, GeoPandas). Metrics computed on natural street segments at multiple distance thresholds \\
-    \midrule
-    \textbf{Data collection} & Derived from publicly available authoritative sources: GHS-UCDB R2024A (2025 reference epoch), Overture Maps Foundation (2026 release), Copernicus Urban Atlas (2021), Copernicus Street Tree Layer (2021), Copernicus Height Model (2012), Eurostat Census Grid (2021) \\
-    \midrule
-    \textbf{Parameters for data collection} & Centrality thresholds: 400--9,600\,m. Accessibility thresholds: 200--1,600\,m. Morphology thresholds: 200--400\,m. CRS: EPSG:3035. See \href{https://github.com/UCL/t2e-soar-eu}{repository} for full configuration \\
-    \midrule
-    \textbf{Data source location} & Pan-European: \NCitiesTotal{} urban centres across 26 EU member states plus Norway and Switzerland (Liechtenstein has no qualifying urban centre under the GHS-UCDB threshold, and Cyprus is not covered by the GHS-UCDB R2024A European regional file used here). Coordinate Reference System: EPSG:3035 (ETRS89-LAEA Europe) \\
-    \midrule
-    \textbf{Data accessibility} & Repository: Zenodo. Data identification number: \ZenodoDoi{}. URL: \ZenodoUrl{} \\
-    \midrule
-    \textbf{Related research article} & G.\ Simons, K.\ Karimi, S.\ Zhand, A Morphological Atlas of European Urbanism: Eight Types of Urban Fabric Across Six Hundred Cities (SOAR-EU), submitted to \textit{Computers, Environment and Urban Systems}. \\
+    GHS-UCDB R2024A & JRC/GHSL & 2024 & \href{https://commission.europa.eu/legal-notice_en\#copyright-notice}{EC reuse policy} & Urban boundaries \\
+    Street networks & Overture Maps & 2026 & \href{https://opendatacommons.org/licenses/odbl/1-0/}{ODbL} & Centrality, accessibility \\
+    Points of interest & Overture Maps & 2026 & \href{https://cdla.dev/permissive-2-0/}{CDLA-Permissive-2.0} & Land-use metrics \\
+    Building footprints & Overture Maps & 2026 & \href{https://opendatacommons.org/licenses/odbl/1-0/}{ODbL} & Morphology \\
+    Urban Atlas & Copernicus & 2021 & \href{https://land.copernicus.eu/en/data-policy}{Copernicus data policy} & Blocks, green space \\
+    Street Tree Layer & Copernicus & 2021 & \href{https://land.copernicus.eu/en/data-policy}{Copernicus data policy} & Tree proximity \\
+    Height Model & Copernicus & 2012 & \href{https://land.copernicus.eu/en/data-policy}{Copernicus data policy} & Building heights \\
+    Census Grid & Eurostat & 2021 & \href{https://commission.europa.eu/legal-notice_en\#copyright-notice}{EC reuse policy} & Demographics \\
     \bottomrule
   \end{tabular}
 \end{table}
 
-%% ============================================================================
-%% VALUE OF THE DATA
-%% ============================================================================
-\section*{\ValueHeading}
+\subsection{Data Processing Pipeline}
 
-\begin{itemize}[leftmargin=*]
-  \item The dataset enables \textbf{consistent comparative research} by removing the methodological confounds that usually frustrate cross-city work: all \NCitiesTotal{} cities are processed with identical methods, parameters, and source datasets, so measured differences reflect the urban fabric rather than differing analytical choices or bespoke data pipelines. This shared baseline supports benchmarking against continental norms, clustering streets into urban typologies, and detecting systematic differences in walkability and land use. Comparability is nonetheless bounded by the geographic consistency of the underlying open sources (Section~\ref{sec:provenance}): broad distributional comparison across regions and city groups is more strongly supported than exact city-by-city ranking, particularly for POI-derived metrics outside the validated French and Dutch reference set.
-  \item The \textbf{multi-scale design} supports sensitivity analysis and scale-appropriate interpretation. Centrality metrics span 400\,m to 9,600\,m (5--120 minute walking catchments); accessibility metrics span 200\,m to 1,600\,m. Because relationships observed at one scale may not hold at others \cite{openshaw1984}, multiple thresholds are provided.
-  \item The dataset supports \textbf{network-based accessibility} analysis that follows pedestrian routes rather than Euclidean buffers \cite{apparicio2008}. A park 200\,m as-the-crow-flies but 800\,m by foot is treated as 800\,m away. For each land-use category, both unweighted and distance-weighted counts are provided, supporting more nuanced aggregations in which proximity can be weighted by distance impedance.
-  \item Researchers can benefit from the \textbf{fine-grained resolution} at street-segment level, which preserves within-neighbourhood heterogeneity and supports analysis from individual streets to city-wide patterns.
-  \item The pipeline supports \textbf{reproducibility}: processing code and parameter settings are documented, enabling researchers to verify, regenerate, or extend the dataset as sources improve.
-  \item The dataset benefits \textbf{urban planners, transport researchers, public health scientists, and environmental analysts} who need comparable pedestrian-scale indicators across European cities but lack the resources to assemble multi-source geospatial pipelines from scratch.
-\end{itemize}
+The pipeline comprises six stages executed via Python modules (Table~\ref{tab:pipeline}). All scripts support idempotent execution (existing outputs are skipped unless \texttt{overwrite} is specified), enabling incremental processing and failure recovery.
+
+\begin{table}[H]
+  \centering
+  \caption{Processing pipeline stages with corresponding Python modules.}
+  \label{tab:pipeline}
+  \small
+  \begin{tabular}{@{}cL{6cm}L{6cm}@{}}
+    \toprule
+    \textbf{Stage} & \textbf{Module} & \textbf{Description} \\
+    \midrule
+    1 & \texttt{src.data.generate\_boundary\_polys} & Filter GHS-UCDB boundaries to continental Europe \\
+    2 & \texttt{src.data.load\_urban\_atlas\_blocks} & Extract Urban Atlas blocks per boundary \\
+    3 & \texttt{src.data.load\_urban\_atlas\_trees} & Extract Street Tree Layer per boundary \\
+    4 & \texttt{src.data.load\_bldg\_hts\_raster} & Clip building height rasters per boundary \\
+    5 & \texttt{src.data.load\_overture} & Extract Overture data (network, POIs, buildings, infrastructure) \\
+    6 & \texttt{src.processing.generate\_metrics} & Compute all metrics per boundary \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+For accurate metric computation at boundary edges, input datasets are buffered beyond city boundaries. Street networks are buffered by 10\,km, giving nodes near boundaries a complete network context for centrality calculations. Points of interest, buildings, and infrastructure are buffered by 2\,km, capturing all reachable amenities for boundary-proximate locations. Copernicus land cover and tree canopy data is clipped to boundary bounding boxes for green-space proximity coverage.
+
+\subsection{Metric Computation}
+\label{sec:metric-computation}
+
+\subsubsection{Network Centrality}
+Network centrality metrics quantify a location's connectivity within the street network and were computed using the cityseer package \cite{simons2023}.
+
+Closeness variants measure how accessible a location is relative to the rest of the network: beta-weighted closeness (gravity index with exponential distance decay), harmonic closeness (sum of inverse distances), Hillier-type closeness (node count divided by average node distance), farness (sum of distances), and street segment density. The density measure (\texttt{cc\_density\_DDD}) is an unweighted count of network nodes, each corresponding to a natural street-segment midpoint after cleaning, reachable within the network-distance threshold; it is not weighted by segment lengths. Betweenness centrality measures how often a location lies on shortest paths between other locations and is computed in both standard and distance-weighted forms.
+
+Metrics were generated using cityseer's shortest-path centrality (\texttt{centrality\_shortest}) at thresholds of 400\,m, 800\,m, 1,200\,m, 1,600\,m, 4,800\,m, and 9,600\,m, corresponding to 5--120 minute walking catchments at 80\,m/min average pedestrian speed. These thresholds span local-to-global catchments: 400\,m captures immediate neighbourhood context; 800\,m reflects typical distances walked to transit; the 1,200--1,600\,m range corresponds to 15-minute walking catchments; 4,800\,m characterises district-scale network structure; and 9,600\,m extends to city-wide connectivity. Centralities are measured using shortest paths (as opposed to angular paths) for greater tolerance of artefacts deriving from automated street cleaning procedures.
+
+\subsubsection{Land-Use and Infrastructure Accessibility}
+\label{sec:landuse-access}
+Points of interest from Overture Maps were classified into the 11 aggregated land-use categories distributed with the dataset (Table~\ref{tab:landuse}). The aggregation follows Overture's own top-level groupings to the extent possible, rather than imposing a re-engineered taxonomy: most of the 11 categories correspond directly to a single Overture top-level class, with only two consolidations (\texttt{eat\_and\_drink} merging restaurants, bars, and cafés; \texttt{business\_and\_services} merging eleven Overture professional and commercial sub-classes) and two renames (\texttt{public\_services} from \texttt{public\_service\_and\_government}, \texttt{religious} from \texttt{religious\_organization}). The complete mapping from Overture's 2,000+ leaf categories to analytical classes is detailed in Supplementary Material (Section~S2).
+
+Overture's separate infrastructure theme is grouped into three further accessibility categories (transport, parking, and street furniture; Table~\ref{tab:infrastructure}), which receive the identical network-accessibility treatment described below.
+
+Accessibility metrics aggregate POI counts over the street network at the same street-segment locations used for centrality computations, enabling direct comparison between network structure and land-use distribution \cite{simons2023}. Network-based distances are used throughout, rather than Euclidean buffers or zonal aggregation.
+
+For each land-use and infrastructure category, both unweighted counts (reachable POIs within $d_{\max}$) and distance-weighted counts (applying exponential decay $e^{-\beta d}$, where $\beta = 4/d_{\max}$ such that weight falls to approximately 0.018 at the distance threshold) were computed, alongside nearest-distance measures. Distance-weighted counts reflect how amenity usage decays with distance (a caf\'{e} at 100\,m contributes more than one at 1,000\,m), while unweighted counts offer simpler interpretability.
+
+The exponential weight never reaches zero, so an establishment infinitely far would still make an infinitesimal contribution. To keep each measure finite and tied to a walkable catchment, a threshold distance $d_{\max}$ is imposed rather than integrating over the entire network. The decay rate is set at $\beta = 4/d_{\max}$ where the weight has already fallen to under 2\% by the time it reaches $d_{\max}$, thereby discarding the infinitely long tail with minimal impact on the aggregations. The threshold distances are round numbers, and the range lets users choose the catchment that suits the intended analysis.
+
+Mixed-use diversity was quantified using Hill numbers \cite{hill1973}. Hill numbers at $q=0$ equal richness (count of distinct land-use types); at $q=1$, the exponential of Shannon entropy; at $q=2$, the inverse Simpson index. We compute all three variants in both unweighted and distance-weighted forms, where the distance-weighted forms follow the same weighting conventions as described for land-use accessibility.
+
+\subsubsection{Morphology}
+Building and block morphology metrics were computed using the momepy package \cite{fleischmann2019}, which provides standardised urban morphometric functions.
+
+For each building footprint, we compute: area, perimeter, circular compactness, orientation, corners count, shape index, fractal dimension, and shared wall ratio (fraction of perimeter shared with adjacent buildings). Building heights are extracted from the Copernicus Height Model raster by buffering each footprint by 10\,m (one DHM pixel) and averaging valid (non-null) overlapping pixel values. The single-pixel buffer ensures that small footprints (those contained within a single pixel) and footprints with minor misregistration against the 2012 raster still receive a height sample; the trade-off is some smoothing in dense fabric where party-wall neighbours and narrow courtyards fall within the buffer. The height value enables computation of volume and form factor. Floor area (assuming 3\,m floor height) is computed per building as an intermediate for block-level FSI but is not retained as a standalone aggregated metric.
+
+Block morphology uses only built-up Urban Atlas blocks: 14 non-built land-cover classes (green areas, forests, agriculture, water, wetlands, and sports/leisure facilities) are excluded before morphometric computation and aggregation of the metrics to the adjacent streets. For the remaining blocks, we compute geometric properties (area, perimeter, circular compactness, orientation) and Spacematrix indicators \cite{haupt2010}: ground space index (GSI, building footprint area divided by block area), floor space index (FSI, total floor area divided by block area), open space ratio (OSR $= (1 - \text{GSI}) / \text{FSI}$), mean number of storeys (L $= \text{FSI} / \text{GSI}$), and area-weighted mean building height. Blocks exceeding 2\,km\textsuperscript{2} are additionally excluded as oversized infrastructural or transitional polygons (the threshold separates typical urban blocks from large airport, port, industrial, or transitional polygons that occur in the Urban Atlas layer); blocks below 1\% building coverage receive NaN for all Spacematrix metrics, since the ratios become numerically unstable as their denominators (GSI, FSI) approach zero.
+
+Building and block metrics are aggregated to streets via nearest-network-distance assignment within 200\,m and 400\,m thresholds. Each building or block centroid is assigned to the nearest street, and statistics (median and median absolute deviation) are computed across all features within each threshold distance. For building area and volume, sum statistics are additionally retained; for block area, only the sum is additionally retained. Building height is also aggregated (as median and MAD of individual building heights per street).
+
+In addition, a bilateral street-frontage ratio is computed per street segment as a source-robust measure of building continuity. For each street, a 35\,m buffer defines a corridor; all building edges whose midpoint falls inside the corridor and whose nearest street is this one are identified. Per side (left/right of the centreline), only edges within 5\,m of the closest edge are retained, filtering out rear extensions and garages while preserving the primary facade line; the 5\,m depth is chosen to span typical facade step-ins and arcades without admitting rear-yard structures. The score is the fraction of street length covered by the retained edges on the more-covered side, with 3\,m trimmed from each end as a junction guard so that a corner building's facade does not count toward both intersecting streets. Unlike shared wall ratio, which requires exact topological contact between adjacent polygon boundaries, frontage ratio depends only on building \emph{presence} along the street edge. It is therefore insensitive to unintended gaps and to the lack of delineation between neighbouring buildings that is characteristic of ML-derived footprints, where segmentation pipelines lack the cadastral subdivision information available to community-contributed sources (see Section~\ref{sec:provenance}).
+
+\subsubsection{Green Space Proximity}
+Network distance to nearest green space polygon edge was computed for each street. Green spaces derive from 12 Urban Atlas land cover classes: public and unknown-access urban green areas, forests, herbaceous vegetation, open spaces with little or no vegetation, wetlands, water bodies, pastures, arable land, permanent crops, mixed cultivation, and orchards (full list in Supplementary Material Section~S3). Sports and leisure facility blocks often function as green space (e.g., open playing fields) but can also be heavily built up (e.g., stadiums, indoor arenas); we therefore apply a consistent 20\% building-coverage threshold, including the block as green space when built coverage is below 20\% and excluding it otherwise.
+
+Polygon boundaries are sampled at 20\,m intervals to generate point features for distance calculations, improving accuracy for large or irregularly-shaped polygons. For each street, only the distance to the single nearest sampled point is retained, so a polygon contributes to a given street at most once regardless of how many of its boundary samples lie within range. Tree canopy proximity uses Street Tree Layer polygons with equivalent sampling. Green space and tree canopy areas are also aggregated within walking distances (200\,m, 400\,m, 800\,m) to quantify local coverage.
+
+\subsubsection{Demographic Interpolation}
+Census grid values were interpolated to street-segment midpoints using Delaunay-based linear barycentric interpolation (\texttt{scipy.interpolate.griddata}, method \texttt{linear}) from 1\,km grid cell centroids. Interpolated variables include: total population (\texttt{t}), population density (\texttt{density}), male/female counts (\texttt{m}, \texttt{f}), age cohorts (\texttt{y\_lt15}, \texttt{y\_1564}, \texttt{y\_ge65}), employment (\texttt{emp}), nationality (\texttt{nat}, \texttt{eu\_oth}, \texttt{oth}), and migration flows (\texttt{same}, \texttt{chg\_in}, \texttt{chg\_out}). Percentage variants (suffixed with \texttt{\_\%}) are computed for each variable relative to total population. Linear interpolation from 1\,km\textsuperscript{2} source cells produces smooth gradients that do not represent sharp sub-cell discontinuities (industrial estates, large parks, transit corridors); these street-level demographic values should be read as neighbourhood-scale context rather than as fine-grained block-level estimates.
+
+\subsection{Implementation}
+\label{sec:implementation}
+
+The pipeline is implemented in Python 3.12 with modules for data ingestion, metric processing, utilities, and land-use classification. Network loading retrieves Overture ``connector'' and ``segment'' themes via STAC, transforms to EPSG:3035, and applies cityseer cleaning (8\,m tolerance, 100-node minimum component size). POI loading maps Overture's 2,000+ raw categories to 23 intermediate classes via a CSV lookup (preserved in the code repository for transparency and reuse), which are then aggregated to the 11 analytical categories distributed with the dataset (Table~\ref{tab:landuse}).
+
+Table~\ref{tab:parameters} summarises the fixed processing parameters ensuring reproducibility across all urban centres.
+
+\begin{table}[!htbp]
+  \centering
+  \caption{Fixed processing parameters for reproducibility.}
+  \label{tab:parameters}
+  \small
+  \begin{tabular}{@{}L{4cm}L{3cm}L{4.5cm}@{}}
+    \toprule
+    \textbf{Parameter} & \textbf{Value(s)} & \textbf{Rationale} \\
+    \midrule
+    Network cleaning tolerance & 8\,m & Consolidate near-parallel edges \\
+    Min.\ component size & 100 nodes & Remove disconnected fragments \\
+    Centrality thresholds & 400, 800, 1200, 1600, 4800, 9600\,m & 5--120 minute walking catchments \\
+    Accessibility thresholds & 200, 400, 800, 1200, 1600\,m & Pedestrian-scale proximity \\
+    Morphology aggregation & 200, 400\,m & Immediate building context \\
+    Green space proximity & 1600\,m & Extended walkable distance \\
+    Green area aggregation & 200, 400, 800\,m & Multi-scale green coverage \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Outputs are written as GeoPackage files in EPSG:3035 following the structure described in Section~\ref{sec:dataset-structure}. Dependencies are pinned via \texttt{pyproject.toml}; core packages include cityseer, momepy, geopandas, and overturemaps.
+
+\subsection{Data Provenance}
+\label{sec:provenance}
+
+SOAR-EU integrates data layers with different provenance. Eurostat boundaries, census data, and Copernicus land cover follow documented methodologies with full pan-European coverage. Street networks derive from OpenStreetMap via Overture, whose road coverage is largely complete across urbanised Europe \cite{barringtonleigh2017}.
+
+Building footprints derive from Overture Maps, which conflates multiple sources in a fixed priority order: community-contributed datasets (OpenStreetMap, Esri Community Maps, national cadastres) take precedence over ML-derived datasets (Microsoft ML Building Footprints, Google Open Buildings). When two sources contain the same building (IoU~$\geq$~50\%), the higher-priority source's geometry is retained; ML-derived footprints fill areas not covered by community sources. Each footprint carries a \texttt{sources} attribute recording which dataset contributed it, enabling downstream filtering by provenance.
+
+In European cities, OpenStreetMap is typically the dominant contributor. Herfort et al.\ \cite{herfort2023} analysed OSM building completeness across 13{,}189 urban agglomerations worldwide and found Europe and Central Asia to have the highest regional average (71\%), though within-region coverage remains uneven. Countries with completed cadastral imports---France (DGFiP cadastre), the Netherlands (BAG), and Belgium/Flanders (GRB)---are generally considered to have a high degree of community-sourced building coverage. In contrast, several southern and eastern European countries (including Romania, Bulgaria, Greece, Hungary, and Portugal) lack such imports and, in our data, rely more heavily on Microsoft's ML-derived footprints. Such ML-derived footprints overlap imperfectly with reference building data \cite{minghini2024}, as they are segmented from imagery rather than digitised from cadastre. Across the \NCitiesTotal{} cities in SOAR-EU, the proportion of ML-derived footprints ranges from near-zero in countries with complete cadastral imports to substantial in several southern and eastern European countries; per-city and per-country breakdowns are provided in the accompanying \texttt{building\_source\_counts.csv} and \texttt{building\_source\_by\_country.csv} (summarised in Supplementary~\S\ref{sec:bldg-supp}), and per-city completeness can be cross-referenced against the ohsome OSM-completeness map at \url{https://hex.ohsome.org/#/urban_building_completeness}.
+
+ML-derived footprints expand coverage but introduce quality trade-offs relevant to morphometric computation. Because they are segmented from overhead imagery rather than digitised from cadastral plans, they delineate roof outlines rather than ground-level footprints and can merge adjacent structures into single polygons or leave gaps that break the topological adjacency these metrics rely on. The effect is visible directly in our data: metrics that depend on exact polygon boundary coincidence (particularly shared wall ratio and, to a lesser extent, fractal dimension) are systematically affected, with shared wall ratio showing the strongest negative association between a city's ML fraction and its median value (full coefficients in Supplementary Table~\ref{tab:building_metric_sensitivity}; the within-city test in Supplementary~\S\ref{sec:bldg-supp} confirms this as a per-building artefact rather than a country-level morphological gradient). Metrics based on polygon area and shape (compactness, orientation, shape index) show no significant association with source composition.
+
+POI data derives primarily from commercial and editorial sources (e.g., Meta, Microsoft, Foursquare, OSM) via Overture, with variable coverage relative to official registries; this is characterised in detail under Technical Validation (Section~\ref{sec:poi-pattern-characterisation}). Temporal currency and other cross-layer caveats are summarised under Usage Notes.
+
+\subsection{Regenerating and extending the dataset}
+\label{sec:regeneration}
+
+The pipeline is designed so that regeneration requires no more than re-running the six numbered stages (Table~\ref{tab:pipeline}) after downloading the upstream releases listed in Table~\ref{tab:sources}: all parameters are fixed in code (Table~\ref{tab:parameters}), each stage is idempotent, and an interrupted run resumes where it stopped. A full rebuild completes in approximately one day on a workstation-class laptop (18-core Apple M5 Pro). Because the stages are source-aligned, partial refreshes are equally direct: a new Overture release requires re-running stages 5--6 only, and a new Urban Atlas or height-model release stages 2--4 and 6. The same properties support extension beyond the current scope, for example to urban centres below the 50,000-population threshold or outside Europe, subject to source coverage.
 
 %% ============================================================================
-%% OBJECTIVE
+%% DATA RECORDS
 %% ============================================================================
-\section*{Objective}
+\section{Data Records}
 
-Comparative urban research requires consistent measurement across cities, yet constructing spatial analytic datasets remains resource-intensive. Related work includes GHSL \cite{pesaresi2023} global built-up surface mapping, Boeing's \cite{boeing2020} analysis of US street networks, Fleischmann et al.'s \cite{fleischmann2022} numerical taxonomy of urban form, and Yap and Biljecki's \cite{yap2023} feature-rich network dataset for 50 cities. Simons's \cite{simons2021thesis} pedestrian-scale integration of street networks, land use, and census demographics across 931 cities and towns in Great Britain is a direct methodological precursor to the present continental-scale dataset.
+The dataset \cite{soar2026} is deposited at Zenodo under DOI \href{\ZenodoUrl}{\ZenodoDoi{}}, licensed under the Open Database License (ODbL~1.0). The deposit comprises a \texttt{boundaries.gpkg} file derived from the GHS-UCDB urban centre boundaries, \NCountries{} country-level ZIP archives (\texttt{soar\_eu\_\{country\}.zip}) that bundle the \NCitiesTotal{} individually compressed city GeoPackages, and the coverage and source-composition reports described below. Each city file follows the naming convention \texttt{metrics\_\{bounds\_fid\}.gpkg.zip}, where \texttt{bounds\_fid} corresponds to the unique identifier from \texttt{boundaries.gpkg}. Figure~\ref{fig:metric-families} summarises the metric families recorded per street, their sources, and the spatial scales at which each is computed.
 
-SOAR-EU (Scalable, Open, Automatable, Reproducible --- European Urban) complements these by providing ready-to-use pedestrian-scale metrics for \NCitiesTotal{} EU urban centres. The dataset integrates GHS-UCDB boundaries, Eurostat census grids, Copernicus land cover and building heights, and Overture Maps street networks and POIs. Metrics are computed on street segments across multiple spatial scales (200--9,600\,m) using the cityseer \cite{simons2023} Python package, spanning network centrality, land-use and infrastructure accessibility, mixed-use diversity, building and block morphology, green-space and tree-canopy proximity, and demographics. The pipeline is open-source and designed for regeneration as future data releases become available.
-
-%% ============================================================================
-%% DATA DESCRIPTION
-%% ============================================================================
-\section{Data Description}
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=\textwidth]{outputs/figures/fig_metric_families.pdf}
+  \caption{\textbf{Overview of SOAR-EU metric families.} Each family of street-level metrics is shown with its input sources, aggregation method, and the network-distance thresholds at which it is computed. Detailed attribute listings are given in Table~\ref{tab:streets_schema} and Supplementary Material Section~S1.}
+  \label{fig:metric-families}
+\end{figure}
 
 \subsection{Dataset Structure}
 \label{sec:dataset-structure}
 
-The dataset comprises a \texttt{boundaries.gpkg} file derived from the GHS-UCDB urban centre boundaries, plus \NCountries{} country-level ZIP archives (\texttt{soar\_eu\_\{country\}.zip}) that bundle the \NCitiesTotal{} individually compressed city GeoPackages. Each city file follows the naming convention \texttt{metrics\_\{bounds\_fid\}.gpkg.zip}, where \texttt{bounds\_fid} corresponds to the unique identifier from \texttt{boundaries.gpkg}.
-
-Each GeoPackage contains three layers: \textbf{streets} (natural street segments with computed metrics as LineString geometries), \textbf{buildings} (individual footprints with morphological attributes), and \textbf{blocks} (urban blocks with source and morphological attributes). The streets layer contains only \emph{live} segments (those whose midpoint falls within the urban centre boundary), excluding peripheral buffer segments used solely for edge-effect mitigation during network and accessibility analysis. Individual city files range from approximately \DatasetMinMB\,MB to \DatasetMaxGB\,GB depending on urban extent (average $\sim$\DatasetMeanMB\,MB); the complete compressed dataset is approximately \DatasetTotalCompressedGB\,GB. End-to-end processing takes approximately one day on a contemporary workstation-class laptop (18-core Apple M5 Pro).
+Each GeoPackage contains three layers: \textbf{streets} (natural street segments with computed metrics as LineString geometries), \textbf{buildings} (individual footprints with morphological attributes), and \textbf{blocks} (urban blocks with source and morphological attributes). The streets layer contains only \emph{live} segments (those whose midpoint falls within the urban centre boundary), excluding peripheral buffer segments used solely for edge-effect mitigation during network and accessibility analysis. Individual city files range from approximately \DatasetMinMB\,MB to \DatasetMaxGB\,GB depending on urban extent (average $\sim$\DatasetMeanMB\,MB); the complete compressed dataset is approximately \DatasetTotalCompressedGB\,GB.
 
 Per-column completeness and building-source composition tables (\texttt{completeness\_coverage.csv}, \texttt{building\_source\_counts.csv}, and \texttt{building\_source\_by\_country.csv}) are bundled with the deposit; coverage is summarised in Section~\ref{sec:coverage} and source composition is interpreted in Section~\ref{sec:provenance}.
 
@@ -298,169 +430,16 @@ Figure~\ref{fig:example-amsterdam} illustrates SOAR-EU output for Amsterdam, sho
 \end{figure}
 
 %% ============================================================================
-%% METHODS
+%% TECHNICAL VALIDATION
 %% ============================================================================
-\section{Methods}
-
-Sections~\ref{sec:study-area}--\ref{sec:implementation} describe the processing pipeline (Figure~\ref{fig:pipeline}); Section~\ref{sec:provenance} discusses data provenance and source quality; Section~\ref{sec:poi-pattern-characterisation} provides scale-dependent usage guidance for POI-derived metrics. All source datasets were ingested during mid 2026 using the release versions indicated in Table~\ref{tab:sources}; the final dataset snapshot used for validation and distribution corresponds to Zenodo deposit \ZenodoDoi{}.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.85\textwidth]{outputs/figures/fig_pipeline.pdf}
-  \caption{\textbf{SOAR-EU processing pipeline.} Four open data sources (blue) feed four processing stages (yellow) that produce three GeoPackage output layers per city (green). Stage~1 filters GHS-UCDB boundaries to the EU and labels cities; Stages~2--5 ingest Copernicus and Overture data in parallel; Stage~6 computes all metrics using the ingested layers, Eurostat census data, and the filtered boundaries.}
-  \label{fig:pipeline}
-\end{figure}
-
-\subsection{Study Area Definition}
-\label{sec:study-area}
-
-Urban boundaries derive from the Global Human Settlement Layer Urban Centre Database (GHS-UCDB) R2024A \cite{ghsl2024}, which defines urban centres using the Degree of Urbanisation (DEGURBA) methodology: contiguous 1$\times$1~km grid cells with $\geq$1,500 inhabitants/km\textsuperscript{2} (or $\geq$50\% built-up surface) and cumulative population $\geq$50,000. Filtering to continental Europe (EPSG:3035) yielded \NCitiesTotal{} urban centres. All meet the $\geq$50,000 population threshold and thus correspond to cities or major urban agglomerations rather than small towns. City names are taken directly from the GHS-UCDB \texttt{GC\_UCN\_MAI\_2025} (Main Urban Centre Name) attribute. Because GHS-UCDB boundaries reflect population density contours rather than administrative units, assigned names may not always correspond to commonly used city names (e.g., a district name rather than the parent municipality).
-
-\subsection{Data Sources}
-
-Table~\ref{tab:sources} summarises input datasets.
-
-Street networks from Overture Maps \cite{overture2026} were cleaned via cityseer \cite{simons2023}, following the automated network-cleaning procedure described in \cite{abdeldayem2026}: disconnected components were removed and degree-2 nodes collapsed. Level-aware processing prevents incorrect merging at bridges or tunnels. The 8\,m cleaning tolerance is deliberately conservative, prioritising consistent processing across all cities over city-specific fine-tuning.
-
-POI categories from Overture's ``places'' theme were mapped to 11 analytical classes (Table~\ref{tab:landuse}; derivation in Section~\ref{sec:landuse-access}), and infrastructure points from Overture's infrastructure theme to three categories (transport, parking, street furniture; Table~\ref{tab:infrastructure}). Land cover and tree canopy derive from Copernicus Urban Atlas \cite{eea2021ua} and Street Tree Layer \cite{eea2021stl} respectively. Building heights were sampled from the Digital Height Model \cite{eea2012bh}.
-
-Demographics from Eurostat Census Grid 2021 \cite{eurostat2024} include population, employment, age structure, nationality, and migration at 1~km\textsuperscript{2} resolution.
-
-\begin{table}[H]
-  \centering
-  \caption{Input data sources and their roles in the processing pipeline.}
-  \label{tab:sources}
-  \small
-  \begin{tabular}{@{}L{2.5cm}L{1.6cm}L{1cm}L{2.8cm}L{3.2cm}@{}}
-    \toprule
-    \textbf{Dataset} & \textbf{Source} & \textbf{Year} & \textbf{Licence} & \textbf{Use} \\
-    \midrule
-    GHS-UCDB R2024A & JRC/GHSL & 2024 & \href{https://commission.europa.eu/legal-notice_en\#copyright-notice}{EC reuse policy} & Urban boundaries \\
-    Street networks & Overture Maps & 2026 & \href{https://opendatacommons.org/licenses/odbl/1-0/}{ODbL} & Centrality, accessibility \\
-    Points of interest & Overture Maps & 2026 & \href{https://cdla.dev/permissive-2-0/}{CDLA-Permissive-2.0} & Land-use metrics \\
-    Building footprints & Overture Maps & 2026 & \href{https://opendatacommons.org/licenses/odbl/1-0/}{ODbL} & Morphology \\
-    Urban Atlas & Copernicus & 2021 & \href{https://land.copernicus.eu/en/data-policy}{Copernicus data policy} & Blocks, green space \\
-    Street Tree Layer & Copernicus & 2021 & \href{https://land.copernicus.eu/en/data-policy}{Copernicus data policy} & Tree proximity \\
-    Height Model & Copernicus & 2012 & \href{https://land.copernicus.eu/en/data-policy}{Copernicus data policy} & Building heights \\
-    Census Grid & Eurostat & 2021 & \href{https://commission.europa.eu/legal-notice_en\#copyright-notice}{EC reuse policy} & Demographics \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-\subsection{Data Processing Pipeline}
-
-The pipeline comprises six stages executed via Python modules (Table~\ref{tab:pipeline}). All scripts support idempotent execution (existing outputs are skipped unless \texttt{overwrite} is specified), enabling incremental processing and failure recovery.
-
-\begin{table}[H]
-  \centering
-  \caption{Processing pipeline stages with corresponding Python modules.}
-  \label{tab:pipeline}
-  \small
-  \begin{tabular}{@{}cL{6cm}L{6cm}@{}}
-    \toprule
-    \textbf{Stage} & \textbf{Module} & \textbf{Description} \\
-    \midrule
-    1 & \texttt{src.data.generate\_boundary\_polys} & Filter GHS-UCDB boundaries to continental Europe \\
-    2 & \texttt{src.data.load\_urban\_atlas\_blocks} & Extract Urban Atlas blocks per boundary \\
-    3 & \texttt{src.data.load\_urban\_atlas\_trees} & Extract Street Tree Layer per boundary \\
-    4 & \texttt{src.data.load\_bldg\_hts\_raster} & Clip building height rasters per boundary \\
-    5 & \texttt{src.data.load\_overture} & Extract Overture data (network, POIs, buildings, infrastructure) \\
-    6 & \texttt{src.processing.generate\_metrics} & Compute all metrics per boundary \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-For accurate metric computation at boundary edges, input datasets are buffered beyond city boundaries. Street networks are buffered by 10\,km, giving nodes near boundaries a complete network context for centrality calculations. Points of interest, buildings, and infrastructure are buffered by 2\,km, capturing all reachable amenities for boundary-proximate locations. Copernicus land cover and tree canopy data is clipped to boundary bounding boxes for green-space proximity coverage.
-
-\subsection{Metric Computation}
-\label{sec:metric-computation}
-
-\subsubsection{Network Centrality}
-Network centrality metrics quantify a location's connectivity within the street network and were computed using the cityseer package \cite{simons2023}.
-
-Closeness variants measure how accessible a location is relative to the rest of the network: beta-weighted closeness (gravity index with exponential distance decay), harmonic closeness (sum of inverse distances), Hillier-type closeness (node count divided by average node distance), farness (sum of distances), and street segment density. The density measure (\texttt{cc\_density\_DDD}) is an unweighted count of network nodes, each corresponding to a natural street-segment midpoint after cleaning, reachable within the network-distance threshold; it is not weighted by segment lengths. Betweenness centrality measures how often a location lies on shortest paths between other locations and is computed in both standard and distance-weighted forms.
-
-Metrics were generated using cityseer's shortest-path centrality (\texttt{centrality\_shortest}) at thresholds of 400\,m, 800\,m, 1,200\,m, 1,600\,m, 4,800\,m, and 9,600\,m, corresponding to 5--120 minute walking catchments at 80\,m/min average pedestrian speed. These thresholds span local-to-global catchments: 400\,m captures immediate neighbourhood context; 800\,m reflects typical distances walked to transit; the 1,200--1,600\,m range corresponds to 15-minute walking catchments; 4,800\,m characterises district-scale network structure; and 9,600\,m extends to city-wide connectivity. Centralities are measured using shortest paths (as opposed to angular paths) for greater tolerance of artefacts deriving from automated street cleaning procedures.
-
-\subsubsection{Land-Use and Infrastructure Accessibility}
-\label{sec:landuse-access}
-Points of interest from Overture Maps were classified into the 11 aggregated land-use categories distributed with the dataset (Table~\ref{tab:landuse}). The aggregation follows Overture's own top-level groupings to the extent possible, rather than imposing a re-engineered taxonomy: most of the 11 categories correspond directly to a single Overture top-level class, with only two consolidations (\texttt{eat\_and\_drink} merging restaurants, bars, and cafés; \texttt{business\_and\_services} merging eleven Overture professional and commercial sub-classes) and two renames (\texttt{public\_services} from \texttt{public\_service\_and\_government}, \texttt{religious} from \texttt{religious\_organization}). The complete mapping from Overture's 2,000+ leaf categories to analytical classes is detailed in Supplementary Material (Section~S2).
-
-Overture's separate infrastructure theme is grouped into three further accessibility categories (transport, parking, and street furniture; Table~\ref{tab:infrastructure}), which receive the identical network-accessibility treatment described below.
-
-Accessibility metrics aggregate POI counts over the street network at the same street-segment locations used for centrality computations, enabling direct comparison between network structure and land-use distribution \cite{simons2023}. Network-based distances are used throughout, rather than Euclidean buffers or zonal aggregation.
-
-For each land-use and infrastructure category, both unweighted counts (reachable POIs within $d_{\max}$) and distance-weighted counts (applying exponential decay $e^{-\beta d}$, where $\beta = 4/d_{\max}$ such that weight falls to approximately 0.018 at the distance threshold) were computed, alongside nearest-distance measures. Distance-weighted counts reflect how amenity usage decays with distance (a caf\'{e} at 100\,m contributes more than one at 1,000\,m), while unweighted counts offer simpler interpretability.
-
-The exponential weight never reaches zero, so an establishment infinitely far would still make an infinitesimal contribution. To keep each measure finite and tied to a walkable catchment, a threshold distance $d_{\max}$ is imposed rather than integrating over the entire network. The decay rate is set at $\beta = 4/d_{\max}$ where the weight has already fallen to under 2\% by the time it reaches $d_{\max}$, thereby discarding the infinitely long tail with minimal impact on the aggregations. The threshold distances are chosen for rounding convenience and the provision of a range of thresholds lets users choose the catchment that suits the intended usage scenario.
-
-Mixed-use diversity was quantified using Hill numbers \cite{hill1973}. Hill numbers at $q=0$ equal richness (count of distinct land-use types); at $q=1$, the exponential of Shannon entropy; at $q=2$, the inverse Simpson index. We compute all three variants in both unweighted and distance-weighted forms, where the distance-weighted forms follow the same weighting conventions as described for land-use accessibility.
-
-\subsubsection{Morphology}
-Building and block morphology metrics were computed using the momepy package \cite{fleischmann2019}, which provides standardised urban morphometric functions.
-
-For each building footprint, we compute: area, perimeter, circular compactness, orientation, corners count, shape index, fractal dimension, and shared wall ratio (fraction of perimeter shared with adjacent buildings). Building heights are extracted from the Copernicus Height Model raster by buffering each footprint by 10\,m (one DHM pixel) and averaging valid (non-null) overlapping pixel values. The single-pixel buffer ensures that small footprints (those contained within a single pixel) and footprints with minor misregistration against the 2012 raster still receive a height sample; the trade-off is some smoothing in dense fabric where party-wall neighbours and narrow courtyards fall within the buffer. The height value enables computation of volume and form factor. Floor area (assuming 3\,m floor height) is computed per building as an intermediate for block-level FSI but is not retained as a standalone aggregated metric.
-
-Block morphology uses only built-up Urban Atlas blocks: 14 non-built land-cover classes (green areas, forests, agriculture, water, wetlands, and sports/leisure facilities) are excluded before morphometric computation and aggregation of the metrics to the adjacent streets. For the remaining blocks, we compute geometric properties (area, perimeter, circular compactness, orientation) and Spacematrix indicators \cite{haupt2010}: ground space index (GSI, building footprint area divided by block area), floor space index (FSI, total floor area divided by block area), open space ratio (OSR $= (1 - \text{GSI}) / \text{FSI}$), mean number of storeys (L $= \text{FSI} / \text{GSI}$), and area-weighted mean building height. Blocks exceeding 2\,km\textsuperscript{2} are additionally excluded as oversized infrastructural or transitional polygons (the threshold separates typical urban blocks from large airport, port, industrial, or transitional polygons that occur in the Urban Atlas layer); blocks below 1\% building coverage receive NaN for all Spacematrix metrics, since the ratios become numerically unstable as their denominators (GSI, FSI) approach zero.
-
-Building and block metrics are aggregated to streets via nearest-network-distance assignment within 200\,m and 400\,m thresholds. Each building or block centroid is assigned to the nearest street, and statistics (median and median absolute deviation) are computed across all features within each threshold distance. For building area and volume, sum statistics are additionally retained; for block area, only the sum is additionally retained. Building height is also aggregated (as median and MAD of individual building heights per street).
-
-In addition, a bilateral street-frontage ratio is computed per street segment as a source-robust measure of building continuity. For each street, a 35\,m buffer defines a corridor; all building edges whose midpoint falls inside the corridor and whose nearest street is this one are identified. Per side (left/right of the centreline), only edges within 5\,m of the closest edge are retained, filtering out rear extensions and garages while preserving the primary facade line. The score is the fraction of street length covered by the retained edges on the more-covered side (3\,m trimmed from each end as a junction guard). Unlike shared wall ratio, which requires exact topological contact between adjacent polygon boundaries, frontage ratio depends only on building \emph{presence} along the street edge. It is therefore insensitive to unintended gaps and to the lack of delineation between neighbouring buildings that is characteristic of ML-derived footprints, where segmentation pipelines lack the cadastral subdivision information available to community-contributed sources (see Section~\ref{sec:provenance}).
-
-\subsubsection{Green Space Proximity}
-Network distance to nearest green space polygon edge was computed for each street. Green spaces derive from 12 Urban Atlas land cover classes: public and unknown-access urban green areas, forests, herbaceous vegetation, open spaces with little or no vegetation, wetlands, water bodies, pastures, arable land, permanent crops, mixed cultivation, and orchards (full list in Supplementary Material Section~S3). Sports and leisure facility blocks often function as green space (e.g., open playing fields) but can also be heavily built up (e.g., stadiums, indoor arenas); we therefore apply a consistent 20\% building-coverage threshold, including the block as green space when built coverage is below 20\% and excluding it otherwise.
-
-Polygon boundaries are sampled at 20\,m intervals to generate point features for distance calculations, improving accuracy for large or irregularly-shaped polygons. For each street, only the distance to the single nearest sampled point is retained, so a polygon contributes to a given street at most once regardless of how many of its boundary samples lie within range. Tree canopy proximity uses Street Tree Layer polygons with equivalent sampling. Green space and tree canopy areas are also aggregated within walking distances (200\,m, 400\,m, 800\,m) to quantify local coverage.
-
-\subsubsection{Demographic Interpolation}
-Census grid values were interpolated to street-segment midpoints using Delaunay-based linear barycentric interpolation (\texttt{scipy.interpolate.griddata}, method \texttt{linear}) from 1\,km grid cell centroids. Interpolated variables include: total population (\texttt{t}), population density (\texttt{density}), male/female counts (\texttt{m}, \texttt{f}), age cohorts (\texttt{y\_lt15}, \texttt{y\_1564}, \texttt{y\_ge65}), employment (\texttt{emp}), nationality (\texttt{nat}, \texttt{eu\_oth}, \texttt{oth}), and migration flows (\texttt{same}, \texttt{chg\_in}, \texttt{chg\_out}). Percentage variants (suffixed with \texttt{\_\%}) are computed for each variable relative to total population. Linear interpolation from 1\,km\textsuperscript{2} source cells produces smooth gradients that do not represent sharp sub-cell discontinuities (industrial estates, large parks, transit corridors); these street-level demographic values should be read as neighbourhood-scale context rather than as fine-grained block-level estimates.
-
-\subsection{Implementation}
-\label{sec:implementation}
-
-The pipeline is implemented in Python 3.12 with modules for data ingestion, metric processing, utilities, and land-use classification. Network loading retrieves Overture ``connector'' and ``segment'' themes via STAC, transforms to EPSG:3035, and applies cityseer cleaning (8\,m tolerance, 100-node minimum component size). POI loading maps Overture's 2,000+ raw categories to 23 intermediate classes via a CSV lookup (preserved in the code repository for transparency and reuse), which are then aggregated to the 11 analytical categories distributed with the dataset (Table~\ref{tab:landuse}).
-
-Table~\ref{tab:parameters} summarises the fixed processing parameters ensuring reproducibility across all urban centres.
-
-\begin{table}[!htbp]
-  \centering
-  \caption{Fixed processing parameters for reproducibility.}
-  \label{tab:parameters}
-  \small
-  \begin{tabular}{@{}L{4cm}L{3cm}L{4.5cm}@{}}
-    \toprule
-    \textbf{Parameter} & \textbf{Value(s)} & \textbf{Rationale} \\
-    \midrule
-    Network cleaning tolerance & 8\,m & Consolidate near-parallel edges \\
-    Min.\ component size & 100 nodes & Remove disconnected fragments \\
-    Centrality thresholds & 400, 800, 1200, 1600, 4800, 9600\,m & 5--120 minute walking catchments \\
-    Accessibility thresholds & 200, 400, 800, 1200, 1600\,m & Pedestrian-scale proximity \\
-    Morphology aggregation & 200, 400\,m & Immediate building context \\
-    Green space proximity & 1600\,m & Extended walkable distance \\
-    Green area aggregation & 200, 400, 800\,m & Multi-scale green coverage \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-Outputs are written as GeoPackage files in EPSG:3035 following the structure described in Section~\ref{sec:dataset-structure}. Dependencies are pinned via \texttt{pyproject.toml}; core packages include cityseer, momepy, geopandas, and overturemaps.
-
-\subsection{Data Provenance}
-\label{sec:provenance}
-
-SOAR-EU integrates data layers with different provenance. Eurostat boundaries, census data, and Copernicus land cover follow documented methodologies with full pan-European coverage. Street networks derive from OpenStreetMap via Overture, whose road coverage is largely complete across urbanised Europe \cite{barringtonleigh2017}.
-
-Building footprints derive from Overture Maps, which conflates multiple sources in a fixed priority order: community-contributed datasets (OpenStreetMap, Esri Community Maps, national cadastres) take precedence over ML-derived datasets (Microsoft ML Building Footprints, Google Open Buildings). When two sources contain the same building (IoU~$\geq$~50\%), the higher-priority source's geometry is retained; ML-derived footprints fill areas not covered by community sources. Each footprint carries a \texttt{sources} attribute recording which dataset contributed it, enabling downstream filtering by provenance.
-
-In European cities, OpenStreetMap is typically the dominant contributor. Herfort et al.\ \cite{herfort2023} analysed OSM building completeness across 13{,}189 urban agglomerations worldwide and found Europe and Central Asia to have the highest regional average (71\%), though within-region coverage remains uneven. Countries with completed cadastral imports---France (DGFiP cadastre), the Netherlands (BAG), and Belgium/Flanders (GRB)---are generally considered to have a high degree of community-sourced building coverage. In contrast, several southern and eastern European countries (including Romania, Bulgaria, Greece, Hungary, and Portugal) lack such imports and, in our data, rely more heavily on Microsoft's ML-derived footprints. Such ML-derived footprints overlap imperfectly with reference building data \cite{minghini2024}, as they are segmented from imagery rather than digitised from cadastre. Across the \NCitiesTotal{} cities in SOAR-EU, the proportion of ML-derived footprints ranges from near-zero in countries with complete cadastral imports to substantial in several southern and eastern European countries; per-city and per-country breakdowns are provided in the accompanying \texttt{building\_source\_counts.csv} and \texttt{building\_source\_by\_country.csv} (summarised in Supplementary~\S\ref{sec:bldg-supp}), and per-city completeness can be cross-referenced against the ohsome OSM-completeness map at \url{https://hex.ohsome.org/#/urban_building_completeness}.
-
-ML-derived footprints expand coverage but introduce quality trade-offs relevant to morphometric computation. Because they are segmented from overhead imagery rather than digitised from cadastral plans, they delineate roof outlines rather than ground-level footprints and can merge adjacent structures into single polygons or leave gaps that break the topological adjacency these metrics rely on. The effect is visible directly in our data: metrics that depend on exact polygon boundary coincidence (particularly shared wall ratio and, to a lesser extent, fractal dimension) are systematically affected, with shared wall ratio showing the strongest negative association between a city's ML fraction and its median value (full coefficients in Supplementary Table~\ref{tab:building_metric_sensitivity}; the within-city test in Supplementary~\S\ref{sec:bldg-supp} confirms this as a per-building artefact rather than a country-level morphological gradient). Metrics based on polygon area and shape (compactness, orientation, shape index) show no significant association with source composition.
-
-POI data derives primarily from commercial and editorial sources (e.g., Meta, Microsoft, Foursquare, OSM) via Overture, with variable coverage relative to official registries; this is characterised in detail in Section~\ref{sec:poi-pattern-characterisation}. Temporal currency and other cross-layer caveats are summarised under Limitations of the Dataset.
-
-\subsection{POI-derived accessibility: source-substitution analysis}
+\section{Technical Validation}
 \label{sec:poi-pattern-characterisation}
 
-Because Overture's POI layer aggregates commercial and crowdsourced data of varying completeness, the reliability of derived metrics varies across categories and spatial scales. To characterise where agreement holds and where it does not, we recompute POI-derived outputs against independent official registries in the two countries for which suitable national registries are openly available: France (SIRENE, \NRefCitiesFr{} cities) and the Netherlands (BAG, \NRefCitiesNl{} cities), \NRefCities{} reference cities in total. This validation therefore speaks directly to French and Dutch coverage; cities elsewhere in Europe (particularly in southern and eastern Europe, where OpenStreetMap-derived coverage is less mature) are outside its scope and should be treated with the additional caution discussed under Limitations of the Dataset. We frame the comparison around three questions that capture the main analytical uses of the resulting metrics:
+Technical validation addresses the two inputs whose quality varies materially across the study area: building footprints and points of interest. Building-footprint source composition and its effect on morphometric indicators are quantified in Supplementary~\S\ref{sec:bldg-supp} and summarised in Section~\ref{sec:provenance}: metrics that depend on exact polygon boundary coincidence (shared wall ratio in particular) carry a per-building artefact in ML-derived footprints, while area- and shape-based metrics and the bilateral street-frontage ratio are insensitive to source composition. The remainder of this section validates POI-derived accessibility.
+
+\subsection{POI source-substitution design}
+
+Because Overture's POI layer aggregates commercial and crowdsourced data of varying completeness, the reliability of derived metrics varies across categories and spatial scales. To characterise where agreement holds and where it does not, we recompute POI-derived outputs against independent official registries in the two countries for which suitable national registries are openly available: France (SIRENE, \NRefCitiesFr{} cities) and the Netherlands (BAG, \NRefCitiesNl{} cities), \NRefCities{} reference cities in total. This validation therefore speaks directly to French and Dutch coverage; cities elsewhere in Europe (particularly in southern and eastern Europe, where OpenStreetMap-derived coverage is less mature) are outside its scope and should be treated with the additional caution discussed under Usage Notes. We frame the comparison around three questions that capture the main analytical uses of the resulting metrics:
 \begin{itemize}
   \item \textbf{How many, relative to elsewhere?} Whether locations are ranked consistently by how much of a particular land use they can access. This is a pattern-agreement question as opposed to one of absolute counts: Overture is known to undercount relative to official registries (further discussed below), so the analytically useful question is whether that undercounting preserves the spatial ordering of accessibility.
   \item \textbf{Where are the hotspots?} Which locations fall in the top tier of activity.
@@ -468,7 +447,7 @@ Because Overture's POI layer aggregates commercial and crowdsourced data of vary
 \end{itemize}
 For each question, we measure agreement between Overture- and registry-derived accessibility for every street segment, then summarise within cities and across cities for each category and spatial scale (Figure~\ref{fig:pointa_support_heatmap}; Table~\ref{tab:pointa_minima}).
 
-\subsubsection{Source-substitution replication}
+\subsection{Source-substitution replication}
 
 \begin{figure}[!htb]
   \centering
@@ -494,13 +473,13 @@ For each question, we measure agreement between Overture- and registry-derived a
   \input{outputs/tables/table_pointa_minima_clean}
 \end{table}
 
-We compute segment-level accessibility metrics twice for each reference city (\NRefCitiesFr{} in France via SIRENE \cite{sirene2026}; \NRefCitiesNl{} in the Netherlands via BAG \cite{bag2026}): once using Overture POIs and once using the official registry as input, holding the street network and all other inputs constant (see Figure~\ref{fig:poi_spatial_comparison} for an example). The question is not whether individual establishments match between sources, but whether the same network-based computations over different POI inputs produce consistent segment-level patterns of accessibility scores. Uncertainty is quantified at two levels: within-city spatial block bootstrap (distance-adaptive blocks, $B = 200$) captures segment-level spatial sampling variability, while a city-level bootstrap ($B = 2{,}000$) treats each city as an independent observation (see Supplementary~\S\ref{sec:poi-supp-bootstrap}). The reference set is concentrated in western Europe and country-specific results are in Supplementary~\S\ref{sec:poi-supp-city-variability}.
+We compute segment-level accessibility metrics twice for each reference city (\NRefCitiesFr{} in France via SIRENE \cite{sirene2026}; \NRefCitiesNl{} in the Netherlands via BAG \cite{bag2026}): once using Overture POIs and once using the official registry as input, holding the street network and all other inputs constant (see Figure~\ref{fig:poi_spatial_comparison} for an example). The comparison asks whether the same network-based computations over different POI inputs produce consistent segment-level patterns of accessibility scores, rather than whether individual establishments match between sources. Uncertainty is quantified at two levels: within-city spatial block bootstrap (distance-adaptive blocks, $B = 200$) captures segment-level spatial sampling variability, while a city-level bootstrap ($B = 2{,}000$) treats each city as an independent observation (see Supplementary~\S\ref{sec:poi-supp-bootstrap}). The reference set is concentrated in western Europe and country-specific results are in Supplementary~\S\ref{sec:poi-supp-city-variability}.
 
 The two registries differ in granularity: SIRENE records individual business establishments with fine-grained activity codes that map relatively cleanly onto Overture's commercial categories. BAG records building-level usage \emph{purposes} in coarser classes that require more approximate mapping: a building tagged \texttt{winkelfunctie} (``retail function''), for instance, aggregates a wider activity range than Overture's retail slot. Differences in measured agreement between the two countries may therefore partly reflect harmonisation quality rather than Overture coverage alone, and BAG's coarser categories likely \emph{understate} Dutch agreement relative to a like-for-like comparison. Full harmonisation details, including the snapshot dates and filters used for each registry extract, are in Supplementary~\S\ref{sec:poi-supp-data}.
 
 Six registry-comparable categories are covered: Retail, Eat \& Drink, Accommodation, Health \& Medical, Education, and Business \& Services. No equivalent registry data was available for the remaining categories (e.g., Active Life, Arts \& Entertainment). Formal definitions of all agreement metrics are in Supplementary~\S\ref{sec:poi-supp-metrics}.
 
-\subsubsection{Scale-dependent results}
+\subsection{Scale-dependent results}
 
 Agreement varies by category and scale; Figure~\ref{fig:pointa_support_heatmap} summarises all combinations using Spearman $\rho$ for rank-correlation cells, and Table~\ref{tab:pointa_minima} converts these to Kendall $\tau$ concordance for threshold comparison. Agreement curves with bootstrap CIs are in Supplementary Figure~\ref{fig:pointa_agreement_panels}.
 
@@ -511,108 +490,150 @@ We find that the data preserves relative distributional patterns across cities, 
 Among the metric families considered, nearest-distance measures show the strongest and most consistent agreement across both scopes. Within-city nearest-distance F1 rises quickly at moderate tolerances for most categories, and between-city nearest-share agreement is high for most categories by 800\,m (Accommodation requires larger tolerances). Because nearest-distance measures depend only on whether \emph{at least one} POI of the relevant type exists nearby, rather than on exact counts, they are more robust to incomplete coverage and show narrower block bootstrap CIs than hotspot overlap. Nearest-distance metrics therefore reach their agreement thresholds at smaller spatial scales than the count-based or hotspot metrics. These concordance levels are appropriate for analyses that compare distributional patterns across groups (morphological types, city clusters, density bands) rather than precise rankings of individual streets or cities.
 
 %% ============================================================================
-%% ETHICS AND DECLARATION
+%% USAGE NOTES
 %% ============================================================================
-\section*{Declaration of Competing Interest}
+\section{Usage Notes}
 
-The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+\subsection{Choosing metrics by task}
+\label{sec:usage-guidance}
 
-\section*{Ethics Statement}
-
-This research did not involve human subjects, animal experiments, or data collected from social media platforms. All source datasets are publicly accessible under their respective licenses.
-
-\section*{Limitations of the Dataset}
-
-Although the dataset spans \NCountries{} countries (EU-27 except Cyprus, plus Norway and Switzerland; Liechtenstein has no qualifying urban centre), the quality of contributing data sources, and therefore of derived metrics, is not uniform across this geography. The principal limitations are summarised below.
+The validation results translate into the following practical guidance.
 
 \begin{itemize}
-  \item \emph{Building footprint source composition.} Polygon-precision metrics (shared wall ratio and, to a lesser extent, fractal dimension) are sensitive to whether footprints derive from cadastral or ML-segmented sources (Section~\ref{sec:provenance}). Per-city composition is reported in \texttt{building\_source\_by\_country.csv}, and the bilateral street-frontage ratio (\texttt{frontage\_max}) offers a more source-robust alternative for continuity analyses. Area-based block metrics (GSI, FSI) and shape metrics (compactness, orientation, shape index) show no meaningful association with source composition.
-
-  \item \emph{Geographic scope of POI validation.} The source-substitution validation covers French and Dutch cities only (Section~\ref{sec:poi-pattern-characterisation}), where POI coverage is more mature than in southern and eastern Europe. The scale-dependent agreement curves (Section~S4) therefore characterise the concordance achievable within this benchmark region; cities in Eastern and Southern Europe may show additional category-specific undercounting that these curves do not directly bound.
-
-  \item \emph{Temporal currency.} Source datasets span 2012--2026 (Table~\ref{tab:sources}). The 2012 Copernicus building height raster is the most outdated layer (\BldgHeightsAgeYears{} years old at time of writing), so morphology metrics for cities with substantial post-2012 construction reflect the pre-2012 built form. Because layers differ in vintage, areas of rapid change may show inconsistencies between layers.
-
-  \item \emph{Coverage gaps.} Three metric groups have variable coverage (height-derived attributes, block contextual morphology at 200\,m, and employment demographics), as detailed in Section~\ref{sec:coverage}. Separately, census values are interpolated from 1\,km\textsuperscript{2} grids, which smooths within-cell variation.
-
-  \item \emph{POI accuracy and uncertainty.} As characterised in Section~\ref{sec:poi-pattern-characterisation}, between-city POI-derived comparisons are reliable for broad distributional ordering rather than exact city rankings. Within-city spatial-block bootstrap CIs are substantially wider for hotspot identification (top-10\% overlap) than for rank correlation, particularly for Health \& Medical and Accommodation, where local data sources can help bound the residual uncertainty. Categories without registry comparators (e.g., Active Life, Arts \& Entertainment) lack formal validation.
+  \item \emph{Nearest-distance metrics} (\texttt{cc\_\{category\}\_nearest\_max\_1600}) are the most robust family: because they depend only on whether at least one facility of a category exists nearby, they tolerate undercoverage, reach agreement thresholds at the smallest spatial scales, and are suitable both for within-city analysis and for broad between-city comparison across the validated categories.
+  \item \emph{Count-based metrics} support within-city pattern analysis at neighbourhood catchments: rank agreement reaches high concordance by ${\sim}$800\,m for most categories (Table~\ref{tab:pointa_minima}). At smaller catchments, treat street-level rankings as indicative.
+  \item \emph{Hotspot identification} (top-decile analyses) carries the widest spatial uncertainty. Prefer catchments of 800\,m or larger, and where conclusions hinge on hotspot membership, bound the residual uncertainty with local data.
+  \item \emph{Between-city comparisons} of POI-derived counts support broad distributional ordering rather than precise city rankings: Overture undercounts establishments relative to official registries, compressing absolute counts (Supplementary Figure~\ref{fig:pointa_cross_city_scatter}).
+  \item \emph{Category and region caveats.} Health \& Medical and Accommodation are the weakest validated categories; categories without registry comparators (e.g., Active Life, Arts \& Entertainment) lack formal validation. Coverage outside the French--Dutch reference region, particularly in southern and eastern Europe, may add category-specific undercounting that the validation does not directly bound.
+  \item \emph{Building-based metrics.} For continuity analyses, prefer the bilateral street-frontage ratio (\texttt{frontage\_max}) over shared wall ratio in cities with substantial ML-derived footprint shares (reported per city in \texttt{building\_source\_counts.csv}); area- and shape-based metrics are insensitive to source composition (Supplementary~\S\ref{sec:bldg-supp}).
 \end{itemize}
 
-\section*{Declaration of Generative AI and AI-assisted Technologies in the Writing Process}
+\subsection{Weighted versus unweighted accessibility}
 
-The original research (pipeline design, data processing, and analysis) was undertaken with minimal AI-assistive technologies. The manuscript itself, together with manuscript-related code and figures, was completed with the aid of Claude (Anthropic). After using this tool, the authors reviewed and edited the content as needed and take full responsibility for the content of the publication.
+The choice between unweighted and distance-weighted counts should follow the research question. Unweighted counts answer supply questions (how many facilities are reachable within a policy catchment) and suit audits against planning standards, where a facility at 750\,m counts the same as one at 50\,m. Distance-weighted counts answer exposure and behaviour questions (how much accessible activity a resident effectively experiences) and suit gravity-style accessibility, walkability indices, and health-exposure applications where nearer facilities plausibly matter more. Nearest-distance measures answer minimum-provision questions and are the most robust to incomplete coverage. Where weighted counts are used, catchments of 800\,m or above are advisable, since the gravity weighting amplifies small geocoding offsets between sources at smaller scales (Supplementary~\S\ref{sec:poi-supp-weighted}).
 
-\section*{CRediT Author Statement}
+\subsection{Extending the validation to other countries}
+
+The source-substitution design is not specific to France and the Netherlands. It requires an open registry with establishment- or building-level activity classifications and coordinates; the harmonisation and comparison scripts in the code repository can be re-pointed at any such registry. SIRENE and the BAG were selected because they are fully open at national scale; as further national registries open, extending the validated region is a direct path for future releases.
+
+\subsection{Limitations}
+
+Although the dataset spans \NCountries{} countries (EU-27 except Cyprus, plus Norway and Switzerland; Liechtenstein has no qualifying urban centre), the quality of contributing sources, and therefore of derived metrics, is not uniform across this geography. The principal limitations divide into those expected to diminish as upstream sources improve and those inherent to an automated continental-scale workflow.
+
+\emph{Expected to diminish with upstream releases:}
+\begin{itemize}
+  \item \textbf{Building height vintage.} Heights derive from the 2012 Copernicus Digital Height Model (\BldgHeightsAgeYears{} years old at the time of writing), so height-derived metrics and FSI reflect pre-2012 built form in areas of later construction. The direction of the resulting bias is known: FSI is understated in post-2012 districts, and blocks near an FSI-based classification threshold there read as less intense than they are. Two considerations bound the practical effect. Height-derived coverage is near-complete in most cities (median \MedianHeightCoverage\%; Section~\ref{sec:coverage}), confining the bias to post-2012 fabric within covered cities and to the flagged low-coverage cities. And the companion research article's threshold-sensitivity analysis varies its FSI classification threshold by $\pm$20\% without material change in type composition, which bounds exposure to systematic FSI understatement of comparable magnitude. A direct quantification would require a newer open continental height layer against which the 2012-based values could be recomputed; none yet exists, and regenerating the dataset when one is released is the intended correction path (Section~\ref{sec:regeneration}).
+  \item \textbf{POI coverage maturity.} Coverage outside the validated French--Dutch region draws on sources that continue to mature; the agreement curves characterise the benchmark region and may not bound category-specific undercounting elsewhere (Section~\ref{sec:usage-guidance}).
+  \item \textbf{Employment coverage.} Employment counts are unavailable for \NCitiesNoEmployment{} cities (Section~\ref{sec:coverage}), reflecting gaps in the upstream Census Grid that future census rounds may close.
+  \item \textbf{ML-derived footprints.} Polygon-precision artefacts (Supplementary~\S\ref{sec:bldg-supp}) will narrow as community and cadastral mapping displaces ML-derived footprints in Overture releases.
+\end{itemize}
+
+\emph{Inherent to the design:}
+\begin{itemize}
+  \item \textbf{Census interpolation.} Demographic values are interpolated from 1\,km\textsuperscript{2} grids, the finest published pan-European resolution; sub-cell discontinuities are smoothed, and street-level demographic values should be read as neighbourhood-scale context (Section~\ref{sec:metric-computation}).
+  \item \textbf{Layer vintages.} Source layers span 2012--2026 (Table~\ref{tab:sources}), so areas of rapid change may show inconsistencies between layers; any multi-source snapshot carries this property.
+  \item \textbf{Boundary definition.} Urban-centre extents follow GHS-UCDB density contours rather than administrative units, which aids cross-country consistency but means names and extents may not match municipal definitions (Section~\ref{sec:study-area}).
+  \item \textbf{Automated processing.} Network cleaning applies uniform parameters across all cities; the 8\,m tolerance is deliberately conservative, but city-specific artefacts cannot be excluded, and nearest-distance measures capture proximity to the closest facility rather than the range of choice within walking distance.
+\end{itemize}
+
+Few open datasets integrate morphology, accessibility, demographics, and environmental variables at pedestrian scale across a continent within a fully reproducible pipeline. SOAR-EU is offered as research infrastructure in that sense: a shared, regenerable measurement base on which comparative urban analytics can build.
+
+%% ============================================================================
+%% DATA AND CODE AVAILABILITY
+%% ============================================================================
+\section*{Data Availability}
+
+The dataset \cite{soar2026} is available at Zenodo: \ZenodoDoi{} / \ZenodoUrl{}, licensed under the \href{https://opendatacommons.org/licenses/odbl/1-0/}{Open Database License (ODbL 1.0)} to comply with share-alike requirements of the OpenStreetMap-derived content in the Overture Maps layers. The deposit contains the GHS-UCDB-derived \texttt{boundaries.gpkg} file (identifying which urban boundary corresponds to each city), \NCountries{} country-level ZIP archives bundling the \NCitiesTotal{} city GeoPackages with pre-computed metrics (streets, buildings, and blocks layers), and a \texttt{completeness\_coverage.csv} file documenting per-column non-null coverage for every city and layer; it does not redistribute upstream sources, which remain available from their original providers. The independent reference registries used for POI source-substitution testing are publicly available: SIRENE \cite{sirene2026} under Open License 2.0 and BAG \cite{bag2026} under CC Public Domain Mark 1.0.\footnote{Public-domain designations for the BAG vary across Dutch open-data portals (Creative Commons Public Domain Mark 1.0 and CC0 1.0); both dedicate the data to the public domain.}
+
+\section*{Code Availability}
+
+The processing pipeline is available at \href{https://github.com/UCL/t2e-soar-eu}{github.com/UCL/t2e-soar-eu} (AGPL-3.0, tagged v1.3.0), with no access restrictions. To reproduce: install dependencies via \texttt{uv sync}, download input datasets per the README, and run the six-stage pipeline (Table~\ref{tab:pipeline}); Section~\ref{sec:regeneration} describes full and partial regeneration. The repository also contains the registry-harmonisation and source-substitution scripts used for Technical Validation, and the exact registry extracts (snapshot dates and filters) are recorded alongside the generated outputs.
+
+\textbf{Supplementary Material} is provided as an appendix: (S1)~complete streets layer schema; (S2)~full land-use classification mapping; (S3)~dataset metadata; (S4)~POI source-substitution methods, agreement curves, and per-city variability; (S5)~building footprint source composition and metric sensitivity.
+
+%% ============================================================================
+%% REFERENCES
+%% ============================================================================
+% Nature reference style: authors (et al. beyond five), title, abbreviated
+% journal, volume, pages (year), DOI as https URL.
+\begin{thebibliography}{24}
+
+  \bibitem{pesaresi2023} Pesaresi, M. \& Politis, P. GHS-BUILT-S R2023A -- GHS built-up surface grid [dataset]. \emph{European Commission, Joint Research Centre} \url{https://doi.org/10.2905/JRC.939FACR} (2023).
+
+  \bibitem{boeing2020} Boeing, G. A multi-scale analysis of 27,000 urban street networks: Every US city, town, urbanized area, and Zillow neighborhood. \emph{Environ. Plan. B Urban Anal. City Sci.} \textbf{47}, 590--608 (2020). \url{https://doi.org/10.1177/2399808318784595}
+
+  \bibitem{fleischmann2022} Fleischmann, M., Feliciotti, A., Romice, O. \& Porta, S. Methodological foundation of a numerical taxonomy of urban form. \emph{Environ. Plan. B Urban Anal. City Sci.} \textbf{49}, 1283--1299 (2022). \url{https://doi.org/10.1177/23998083211059835}
+
+  \bibitem{yap2023} Yap, W. \& Biljecki, F. A global feature-rich network dataset of cities and dashboard for comprehensive urban analyses. \emph{Sci. Data} \textbf{10}, 667 (2023). \url{https://doi.org/10.1038/s41597-023-02578-1}
+
+  \bibitem{simons2021thesis} Simons, G. D. \emph{Detection and prediction of urban archetypes at the pedestrian scale: computational toolsets, morphological metrics, and machine learning methods}. Ph.D. thesis, UCL (University College London) (2021). \url{https://discovery.ucl.ac.uk/id/eprint/10134012/}
+
+  \bibitem{simons2023} Simons, G. The cityseer Python package for pedestrian-scale network-based urban analysis. \emph{Environ. Plan. B Urban Anal. City Sci.} \textbf{50}, 1328--1344 (2023). \url{https://doi.org/10.1177/23998083221133827}
+
+  \bibitem{openshaw1984} Openshaw, S. \emph{The Modifiable Areal Unit Problem}. Concepts and Techniques in Modern Geography 38 (Geo Books, 1984). \url{https://www.qmrg.org.uk/catmog/}
+
+  \bibitem{apparicio2008} Apparicio, P., Abdelmajid, M., Riva, M. \& Shearmur, R. Comparing alternative approaches to measuring the geographical accessibility of urban health services: Distance types and aggregation-error issues. \emph{Int. J. Health Geogr.} \textbf{7}, 7 (2008). \url{https://doi.org/10.1186/1476-072X-7-7}
+
+  \bibitem{soar2026} Simons, G., Karimi, K. \& Zhand, S. SOAR-EU: Scalable Open Automatable Reproducible European Urban Metrics [dataset]. \emph{Zenodo} \url{https://doi.org/\ZenodoDoi{}} (2026).
+
+  \bibitem{ghsl2024} European Commission, Joint Research Centre. GHS Urban Centre Database R2024A [dataset]. \url{https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php} (2024).
+
+  \bibitem{overture2026} Overture Maps Foundation. Overture Maps Data -- Release 2026-05-20.0 [dataset]. \url{https://docs.overturemaps.org/release/2026-05-20.0/} (2026).
+
+  \bibitem{abdeldayem2026} Abdeldayem, W. S. \emph{et al.} Automated versus hybrid street network modelling for centrality and accessibility analysis. \emph{Environ. Plan. B Urban Anal. City Sci.} (2026). \url{https://doi.org/10.1177/23998083261433647}
+
+  \bibitem{eea2021ua} European Environment Agency. Urban Atlas 2021 [dataset]. \emph{Copernicus Land Monitoring Service} \url{https://doi.org/10.2909/05ae1ee1-e550-4e66-b74d-4926322d981a} (2021).
+
+  \bibitem{eea2021stl} European Environment Agency. Street Tree Layer 2021 [dataset]. \emph{Copernicus Land Monitoring Service} \url{https://land.copernicus.eu/en/products/urban-atlas/street-tree-layer-stl-2021} (2021).
+
+  \bibitem{eea2012bh} European Environment Agency. Building Height 2012 [dataset]. \emph{Copernicus Land Monitoring Service} \url{https://land.copernicus.eu/en/products/urban-atlas/building-height-2012} (2012).
+
+  \bibitem{eurostat2024} Eurostat. Census 2021 -- Population Grid [dataset]. \url{https://ec.europa.eu/eurostat/web/gisco/geodata/population-distribution/population-grids} (2024).
+
+  \bibitem{hill1973} Hill, M. O. Diversity and evenness: a unifying notation and its consequences. \emph{Ecology} \textbf{54}, 427--432 (1973). \url{https://doi.org/10.2307/1934352}
+
+  \bibitem{fleischmann2019} Fleischmann, M. momepy: Urban morphology measuring toolkit. \emph{J. Open Source Softw.} \textbf{4}, 1807 (2019). \url{https://doi.org/10.21105/joss.01807}
+
+  \bibitem{haupt2010} Berghauser Pont, M. \& Haupt, P. \emph{Spacematrix: Space, Density and Urban Form} (NAi Publishers, 2010).
+
+  \bibitem{barringtonleigh2017} Barrington-Leigh, C. \& Millard-Ball, A. The world's user-generated road map is more than 80\% complete. \emph{PLoS ONE} \textbf{12}, e0180698 (2017). \url{https://doi.org/10.1371/journal.pone.0180698}
+
+  \bibitem{herfort2023} Herfort, B., Lautenbach, S., Porto de Albuquerque, J., Anderson, J. \& Zipf, A. A spatio-temporal analysis investigating completeness and inequalities of global urban building data in OpenStreetMap. \emph{Nat. Commun.} \textbf{14}, 3985 (2023). \url{https://doi.org/10.1038/s41467-023-39698-6}
+
+  \bibitem{minghini2024} Minghini, M., Thabit Gonzalez, S. \& Gabrielli, L. Pan-European open building footprints: analysis and comparison in selected countries. \emph{ISPRS Arch.} \textbf{XLVIII-4/W12-2024}, 97 (2024). \url{https://doi.org/10.5194/isprs-archives-XLVIII-4-W12-2024-97-2024}
+
+  \bibitem{sirene2026} INSEE. Base SIRENE des entreprises et de leurs \'{e}tablissements (SIREN, SIRET) [dataset]. \url{https://www.data.gouv.fr/en/datasets/base-sirene-des-entreprises-et-de-leurs-etablissements-siren-siret/} (2026). Open License 2.0 (Etalab).
+
+  \bibitem{bag2026} Kadaster. BAG 2.0 Extract [dataset]. \url{https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract} (2026). CC Public Domain Mark 1.0.
+
+\end{thebibliography}
+
+%% ============================================================================
+%% DECLARATIONS (Scientific Data order: Author Contributions, Competing
+%% Interests, Acknowledgements, Funding, Ethics)
+%% ============================================================================
+
+\section*{Author Contributions}
 
 \noindent\textbf{Gareth Simons}: Conceptualisation, Methodology, Software, Data curation, Writing.\\
 \textbf{Kayvan Karimi}: Conceptualisation, Supervision, Review.\\
 \textbf{Sepehr Zhand}: Conceptualisation, Review.
 
+\section*{Competing Interests}
+
+The authors declare no competing interests.
+
 \section*{Acknowledgements}
 
-This project has received funding from the European Union's Horizon Europe Research and Innovation Programme under Grant Agreement No.\ \GrantNumber{}, UK Research and Innovation (UKRI) under the UK government's Horizon Europe funding guarantee under grant numbers 10052856 and 10050784.
+The original research (pipeline design, data processing, and analysis) was undertaken with minimal AI-assistive technologies. The manuscript itself, together with manuscript-related code and figures, was completed with the aid of Claude (Anthropic). After using this tool, the authors reviewed and edited the content as needed and take full responsibility for the content of the publication.
 
-\section*{Data Availability}
+\section*{Funding}
 
-The dataset \cite{soar2026} is available at Zenodo: \ZenodoDoi{} / \ZenodoUrl{}, licensed under the \href{https://opendatacommons.org/licenses/odbl/1-0/}{Open Database License (ODbL 1.0)} to comply with share-alike requirements of the OpenStreetMap-derived content in the Overture Maps layers. The deposit contains the GHS-UCDB-derived \texttt{boundaries.gpkg} file (identifying which urban boundary corresponds to each city), \NCountries{} country-level ZIP archives bundling the \NCitiesTotal{} city GeoPackages with pre-computed metrics (streets, buildings, and blocks layers), and a \texttt{completeness\_coverage.csv} file documenting per-column non-null coverage for every city and layer; it does not redistribute upstream sources, which remain available from their original providers. The independent reference registries used for POI source-substitution testing are publicly available: SIRENE \cite{sirene2026} under Open License 2.0 and BAG \cite{bag2026} under CC Public Domain Mark 1.0.\footnote{Public-domain designations for the BAG vary across Dutch open-data portals (Creative Commons Public Domain Mark 1.0 and CC0 1.0); both dedicate the data to the public domain.}
+This project has received funding from the European Union's Horizon Europe Research and Innovation Programme under Grant Agreement No.\ \GrantNumber{}, and from UK Research and Innovation (UKRI) under the UK government's Horizon Europe funding guarantee under grant numbers 10052856 and 10050784.
 
-The processing pipeline is available at \href{https://github.com/UCL/t2e-soar-eu}{github.com/UCL/t2e-soar-eu} (AGPL-3.0, tagged v1.2.0). To reproduce: install dependencies via \texttt{uv sync}, download input datasets per the README, and run the six-stage pipeline (Table~\ref{tab:pipeline}).
+\section*{Ethics Statement}
 
-\textbf{Supplementary Material} is provided as an appendix: (S1)~complete streets layer schema; (S2)~full land-use classification mapping; (S3)~dataset metadata; (S4)~POI source-substitution methods, agreement curves, and per-city variability.
-
-%% ============================================================================
-%% REFERENCES
-%% ============================================================================
-\begin{thebibliography}{24}
-
-  \bibitem{pesaresi2023} M. Pesaresi, P. Politis, GHS-BUILT-S R2023A -- GHS built-up surface grid [dataset], European Commission, Joint Research Centre, 2023. \url{https://doi.org/10.2905/JRC.939FACR}
-
-  \bibitem{boeing2020} G. Boeing, A multi-scale analysis of 27,000 urban street networks: Every US city, town, urbanized area, and Zillow neighborhood, Environ. Plan. B Urban Anal. City Sci. 47~(4) (2020) 590--608. \url{https://doi.org/10.1177/2399808318784595}
-
-  \bibitem{fleischmann2022} M. Fleischmann, A. Feliciotti, O. Romice, S. Porta, Methodological foundation of a numerical taxonomy of urban form, Environ. Plan. B Urban Anal. City Sci. 49~(4) (2022) 1283--1299. \url{https://doi.org/10.1177/23998083211059835}
-
-  \bibitem{yap2023} W. Yap, F. Biljecki, A global feature-rich network dataset of cities and dashboard for comprehensive urban analyses, Sci. Data 10 (2023) 667. \url{https://doi.org/10.1038/s41597-023-02578-1}
-
-  \bibitem{simons2023} G. Simons, The cityseer Python package for pedestrian-scale network-based urban analysis, Environ. Plan. B Urban Anal. City Sci. 50~(5) (2023) 1328--1344. \url{https://doi.org/10.1177/23998083221133827}
-
-  \bibitem{simons2021thesis} G.D. Simons, Detection and prediction of urban archetypes at the pedestrian scale: computational toolsets, morphological metrics, and machine learning methods, Ph.D. thesis, UCL (University College London), 2021. \url{https://discovery.ucl.ac.uk/id/eprint/10134012/}
-
-  \bibitem{openshaw1984} S. Openshaw, The modifiable areal unit problem, Concepts Tech. Mod. Geogr. 38 (1984). \url{https://www.qmrg.org.uk/catmog/}
-
-  \bibitem{apparicio2008} P. Apparicio, M. Abdelmajid, M. Riva, R. Shearmur, Comparing alternative approaches to measuring the geographical accessibility of urban health services: Distance types and aggregation-error issues, Int. J. Health Geogr. 7 (2008) 7. \url{https://doi.org/10.1186/1476-072X-7-7}
-
-  \bibitem{ghsl2024} European Commission, Joint Research Centre, GHS Urban Centre Database R2024A [dataset], 2024. \url{https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php}
-
-  \bibitem{overture2026} Overture Maps Foundation, Overture Maps Data -- Release 2026-05-20.0 [dataset], 2026. \url{https://docs.overturemaps.org/release/2026-05-20.0/}
-
-  \bibitem{eea2021ua} European Environment Agency, Urban Atlas 2021 [dataset], Copernicus Land Monitoring Service, 2021. \url{https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2021}. \url{https://doi.org/10.2909/05ae1ee1-e550-4e66-b74d-4926322d981a}
-
-  \bibitem{eea2021stl} European Environment Agency, Street Tree Layer 2021 [dataset], Copernicus Land Monitoring Service, 2021. \url{https://land.copernicus.eu/en/products/urban-atlas/street-tree-layer-stl-2021}
-
-  \bibitem{eea2012bh} European Environment Agency, Building Height 2012 [dataset], Copernicus Land Monitoring Service, 2012. \url{https://land.copernicus.eu/en/products/urban-atlas/building-height-2012}
-
-  \bibitem{eurostat2024} Eurostat, Census 2021 -- Population Grid [dataset], 2024. \url{https://ec.europa.eu/eurostat/web/gisco/geodata/population-distribution/population-grids}
-
-  \bibitem{hill1973} M.O. Hill, Diversity and evenness: a unifying notation and its consequences, Ecology 54~(2) (1973) 427--432. \url{https://doi.org/10.2307/1934352}
-
-  \bibitem{fleischmann2019} M. Fleischmann, momepy: Urban morphology measuring toolkit, J. Open Source Softw. 4~(43) (2019) 1807. \url{https://doi.org/10.21105/joss.01807}
-
-  \bibitem{haupt2010} M. Berghauser Pont, P. Haupt, Spacematrix: Space, Density and Urban Form, NAi Publishers, Rotterdam, 2010.
-
-  \bibitem{herfort2023} B. Herfort, S. Lautenbach, J. Porto de Albuquerque, J. Anderson, A. Zipf, A spatio-temporal analysis investigating completeness and inequalities of global urban building data in OpenStreetMap, Nat. Commun. 14 (2023) 3985. \url{https://doi.org/10.1038/s41467-023-39698-6}
-
-  \bibitem{barringtonleigh2017} C. Barrington-Leigh, A. Millard-Ball, The world's user-generated road map is more than 80\% complete, PLoS ONE 12~(8) (2017) e0180698. \url{https://doi.org/10.1371/journal.pone.0180698}
-
-  \bibitem{minghini2024} M. Minghini, S. Thabit Gonzalez, L. Gabrielli, Pan-European open building footprints: analysis and comparison in selected countries, ISPRS Arch. XLVIII-4/W12-2024 (2024) 97. \url{https://doi.org/10.5194/isprs-archives-XLVIII-4-W12-2024-97-2024}
-
-  \bibitem{sirene2026} INSEE, Base SIRENE des entreprises et de leurs \'{e}tablissements (SIREN, SIRET) [dataset], 2026. \url{https://www.data.gouv.fr/en/datasets/base-sirene-des-entreprises-et-de-leurs-etablissements-siren-siret/}. Open License 2.0 (Etalab).
-
-  \bibitem{bag2026} Kadaster, BAG 2.0 Extract [dataset], 2026. \url{https://www.kadaster.nl/zakelijk/producten/adressen-en-gebouwen/bag-2.0-extract}. CC Public Domain Mark 1.0.
-
-  \bibitem{abdeldayem2026} W.S. Abdeldayem, I. Geddes, A.H. Eldesoky, I. Stavroulaki, G. Simons, M. Berghauser Pont, N. Charalambous, Automated versus hybrid street network modelling for centrality and accessibility analysis, Environ. Plan. B Urban Anal. City Sci. (2026). \url{https://doi.org/10.1177/23998083261433647}
-
-  \bibitem{soar2026} G. Simons, K. Karimi, S. Zhand, SOAR-EU: Scalable Open Automatable Reproducible European Urban Metrics [dataset], Zenodo, 2026. \url{https://doi.org/\ZenodoDoi{}}
-
-\end{thebibliography}
+This research did not involve human subjects, animal experiments, or data collected from social media platforms. Census demographics are aggregated to 1\,km\textsuperscript{2} grid cells and contain no individual-level information. All source datasets are publicly accessible under their respective licenses.
 
 %% ============================================================================
 %% SUPPLEMENTARY MATERIAL
@@ -620,468 +641,6 @@ The processing pipeline is available at \href{https://github.com/UCL/t2e-soar-eu
 \appendix
 \renewcommand{\thesection}{S\arabic{section}}
 
-\section{Complete Streets Layer Schema}
-\label{sec:streets-schema}
-
-The streets layer contains street segments with computed metrics. Distance thresholds vary by metric type: centrality at 400\,m, 800\,m, 1200\,m, 1600\,m, 4800\,m, 9600\,m; accessibility at 200\,m, 400\,m, 800\,m, 1200\,m, 1600\,m; morphology at 200\,m, 400\,m; green space proximity at 1600\,m; green area aggregation at 200\,m, 400\,m, 800\,m. Table~\ref{tab:complete_streets} provides the complete attribute schema.
-
-\begin{landscape}
-  \scriptsize
-  \begin{longtable}{@{}L{7cm}L{2cm}L{8cm}L{3cm}@{}}
-    \caption{Complete streets layer attribute schema. Suffix \texttt{\_DDD} indicates distance threshold in metres. Source abbreviations: Ovt net = Overture street networks; Ovt POI = Overture POIs; Ovt infra = Overture infrastructure; Ovt bldg = Overture building footprints; UA = Copernicus Urban Atlas; STL = Copernicus Street Tree Layer; CHM = Copernicus Height Model.} \label{tab:complete_streets} \\
-    \toprule
-    \textbf{Attribute} & \textbf{Type} & \textbf{Description} & \textbf{Source} \\
-    \midrule
-    \endfirsthead
-
-    \multicolumn{4}{c}%
-    {{\tablename\ \thetable{} -- continued from previous page}} \\
-    \toprule
-    \textbf{Attribute} & \textbf{Type} & \textbf{Description} & \textbf{Source} \\
-    \midrule
-    \endhead
-
-    \midrule
-    \multicolumn{4}{r}{{Continued on next page}} \\
-    \endfoot
-
-    \bottomrule
-    \endlastfoot
-
-    \multicolumn{4}{l}{\textbf{Geometry and Identifiers}} \\
-    \midrule
-    \texttt{geometry} & LineString & Street segment geometry (EPSG:3035) & Ovt net \\
-    \texttt{ns\_node\_idx} & Integer & Internal network node index & Ovt net \\
-    \texttt{x} & Float & Segment midpoint X coordinate (EPSG:3035) & Ovt net \\
-    \texttt{y} & Float & Segment midpoint Y coordinate (EPSG:3035) & Ovt net \\
-    \midrule
-
-    \multicolumn{4}{l}{\textbf{Network Centrality (Segment-Based, DDD = 400, 800, 1200, 1600, 4800, 9600)}} \\
-    \midrule
-    \texttt{cc\_beta\_DDD} & Float & Beta-weighted closeness (gravity index with exponential decay) & Ovt net \\
-    \texttt{cc\_cycles\_DDD} & Float & Cycle count within threshold & Ovt net \\
-    \texttt{cc\_density\_DDD} & Float & Street segment density within threshold & Ovt net \\
-    \texttt{cc\_farness\_DDD} & Float & Total network distance to reachable segments & Ovt net \\
-    \texttt{cc\_harmonic\_DDD} & Float & Harmonic closeness (sum of inverse distances) & Ovt net \\
-    \texttt{cc\_hillier\_DDD} & Float & Hillier-type closeness (node count / avg distance) & Ovt net \\
-    \texttt{cc\_betweenness\_DDD} & Float & Segment betweenness centrality & Ovt net \\
-    \texttt{cc\_betweenness\_beta\_DDD} & Float & Beta-weighted betweenness centrality & Ovt net \\
-    \midrule
-
-    \multicolumn{4}{l}{\textbf{Accessibility -- POI Counts (DDD = 200, 400, 800, 1200, 1600)}} \\
-    \midrule
-    \texttt{cc\_accommodation\_DDD\_nw} & Integer & Unweighted count of accommodation POIs & Ovt POI \\
-    \texttt{cc\_accommodation\_DDD\_wt} & Float & Distance-weighted count of accommodation POIs & Ovt POI \\
-    \texttt{cc\_accommodation\_nearest\_max\_1600} & Float & Distance to nearest accommodation POI (m) & Ovt POI \\
-    \texttt{cc\_active\_life\_DDD\_nw/wt} & Float & Active life POI counts (unweighted/weighted) & Ovt POI \\
-    \texttt{cc\_arts\_and\_entertainment\_DDD\_nw/wt} & Float & Arts and entertainment POI counts & Ovt POI \\
-    \texttt{cc\_attractions\_and\_activities\_DDD\_nw/wt} & Float & Attractions and activities POI counts & Ovt POI \\
-    \texttt{cc\_business\_and\_services\_DDD\_nw/wt} & Float & Business and services POI counts & Ovt POI \\
-    \texttt{cc\_eat\_and\_drink\_DDD\_nw/wt} & Float & Eat and drink POI counts & Ovt POI \\
-    \texttt{cc\_education\_DDD\_nw/wt} & Float & Education POI counts & Ovt POI \\
-    \texttt{cc\_health\_and\_medical\_DDD\_nw/wt} & Float & Health and medical POI counts & Ovt POI \\
-    \texttt{cc\_public\_services\_DDD\_nw/wt} & Float & Public services POI counts & Ovt POI \\
-    \texttt{cc\_religious\_DDD\_nw/wt} & Float & Religious POI counts & Ovt POI \\
-    \texttt{cc\_retail\_DDD\_nw/wt} & Float & Retail POI counts & Ovt POI \\
-    \texttt{cc\_\{category\}\_nearest\_max\_1600} & Float & Distance to nearest POI in category (m) & Ovt POI \\
-    \midrule
-
-    \multicolumn{4}{l}{\textbf{Infrastructure Accessibility (DDD = 200, 400, 800, 1200, 1600)}} \\
-    \midrule
-    \texttt{cc\_transport\_DDD\_nw/wt} & Float & Transport stops/stations counts & Ovt infra \\
-    \texttt{cc\_street\_furn\_DDD\_nw/wt} & Float & Street furniture counts (benches, fountains) & Ovt infra \\
-    \texttt{cc\_parking\_DDD\_nw/wt} & Float & Parking facility counts & Ovt infra \\
-    \midrule
-
-    \multicolumn{4}{l}{\textbf{Mixed-Use Diversity Indices (DDD = 200, 400, 800, 1200, 1600)}} \\
-    \midrule
-    \texttt{cc\_hill\_q0\_DDD\_nw} & Float & Hill diversity (q=0, richness) unweighted & Ovt POI \\
-    \texttt{cc\_hill\_q0\_DDD\_wt} & Float & Hill diversity (q=0, richness) distance-weighted & Ovt POI \\
-    \texttt{cc\_hill\_q1\_DDD\_nw} & Float & Hill diversity (q=1, exp Shannon) unweighted & Ovt POI \\
-    \texttt{cc\_hill\_q1\_DDD\_wt} & Float & Hill diversity (q=1, exp Shannon) distance-weighted & Ovt POI \\
-    \texttt{cc\_hill\_q2\_DDD\_nw} & Float & Hill diversity (q=2, inv Simpson) unweighted & Ovt POI \\
-    \texttt{cc\_hill\_q2\_DDD\_wt} & Float & Hill diversity (q=2, inv Simpson) distance-weighted & Ovt POI \\
-    \midrule
-
-    \multicolumn{4}{l}{\textbf{Building Morphology (DDD = 200, 400; stat = median, mad; suf = nw, wt)}} \\
-    \midrule
-    \texttt{cc\_area\_\{stat\}\_DDD\_\{suf\}} & Float & Building area statistics (m\textsuperscript{2}) & Ovt bldg \\
-    \texttt{cc\_area\_sum\_DDD\_\{suf\}} & Float & Total building area within threshold (m\textsuperscript{2}) & Ovt bldg \\
-    \texttt{cc\_perimeter\_\{stat\}\_DDD\_\{suf\}} & Float & Building perimeter statistics (m) & Ovt bldg \\
-    \texttt{cc\_compactness\_\{stat\}\_DDD\_\{suf\}} & Float & Circular compactness ($A / A_{\text{encl}}$) & Ovt bldg \\
-    \texttt{cc\_orientation\_\{stat\}\_DDD\_\{suf\}} & Float & Orientation angle (degrees) & Ovt bldg \\
-    \texttt{cc\_mean\_height\_\{stat\}\_DDD\_\{suf\}} & Float & Building height (m) & CHM \\
-    \texttt{cc\_volume\_\{stat\}\_DDD\_\{suf\}} & Float & Building volume (m\textsuperscript{3}) & Ovt bldg + CHM \\
-    \texttt{cc\_volume\_sum\_DDD\_\{suf\}} & Float & Total building volume within threshold (m\textsuperscript{3}) & Ovt bldg + CHM \\
-    \texttt{cc\_form\_factor\_\{stat\}\_DDD\_\{suf\}} & Float & Form factor ($S / V^{2/3}$, $S = Ph + A$) & Ovt bldg + CHM \\
-    \texttt{cc\_corners\_\{stat\}\_DDD\_\{suf\}} & Float & Corner count & Ovt bldg \\
-    \texttt{cc\_shape\_index\_\{stat\}\_DDD\_\{suf\}} & Float & Shape index & Ovt bldg \\
-    \texttt{cc\_shared\_wall\_ratio\_\{stat\}\_DDD\_\{suf\}} & Float & Shared wall ratio (fraction of perimeter) & Ovt bldg \\
-    \texttt{cc\_fractal\_dimension\_\{stat\}\_DDD\_\{suf\}} & Float & Fractal dimension & Ovt bldg \\
-    \texttt{cc\_building\_DDD\_nw/wt} & Float & Building count (unweighted/weighted) & Ovt bldg \\
-    \texttt{frontage\_max} & Float & Bilateral street-frontage ratio (0--1); max of left/right building edge coverage within 35\,m corridor & Ovt bldg \\
-    \texttt{frontage\_avg} & Float & Mean of left and right frontage coverage & Ovt bldg \\
-    \texttt{frontage\_left} & Float & Left-side frontage coverage & Ovt bldg \\
-    \texttt{frontage\_right} & Float & Right-side frontage coverage & Ovt bldg \\
-    \midrule
-
-    \multicolumn{4}{l}{\textbf{Green Space Proximity (DDD = 200, 400, 800)}} \\
-    \midrule
-    \texttt{cc\_green\_nearest\_max\_1600} & Float & Distance to nearest green space (m) & UA \\
-    \texttt{cc\_trees\_nearest\_max\_1600} & Float & Distance to nearest tree canopy (m) & STL \\
-    \texttt{cc\_green\_area\_sum\_DDD\_nw/wt} & Float & Green space area within threshold (km\textsuperscript{2}) & UA \\
-    \texttt{cc\_trees\_area\_sum\_DDD\_nw/wt} & Float & Tree canopy area within threshold (km\textsuperscript{2}) & STL \\
-    \midrule
-
-    \multicolumn{4}{l}{\textbf{Demographics (interpolated from census grid)}} \\
-    \midrule
-    \texttt{t} & Float & Total population & Eurostat 2021 \\
-    \texttt{density} & Float & Population density (pop / land surface) & Eurostat 2021 \\
-    \texttt{m}, \texttt{f} & Float & Male / female population counts & Eurostat 2021 \\
-    \texttt{m\_\%}, \texttt{f\_\%} & Float & Male / female percentages & Eurostat 2021 \\
-    \texttt{y\_lt15}, \texttt{y\_1564}, \texttt{y\_ge65} & Float & Age cohort counts (under 15, 15--64, 65+) & Eurostat 2021 \\
-    \texttt{y\_lt15\_\%}, \texttt{y\_1564\_\%}, \texttt{y\_ge65\_\%} & Float & Age cohort percentages & Eurostat 2021 \\
-    \texttt{emp} & Float & Employment count & Eurostat 2021 \\
-    \texttt{emp\_\%} & Float & Employment percentage & Eurostat 2021 \\
-    \texttt{nat}, \texttt{eu\_oth}, \texttt{oth} & Float & Nationality counts (national, EU other, non-EU) & Eurostat 2021 \\
-    \texttt{nat\_\%}, \texttt{eu\_oth\_\%}, \texttt{oth\_\%} & Float & Nationality percentages & Eurostat 2021 \\
-    \texttt{same}, \texttt{chg\_in}, \texttt{chg\_out} & Float & Migration counts (same residence, in, out) & Eurostat 2021 \\
-    \texttt{same\_\%}, \texttt{chg\_in\_\%}, \texttt{chg\_out\_\%} & Float & Migration percentages & Eurostat 2021 \\
-    \midrule
-
-    \multicolumn{4}{l}{\textbf{Block Characteristics (DDD = 200, 400; stat = median, mad; suf = nw, wt)}} \\
-    \midrule
-    \texttt{cc\_block\_area\_\{stat\}\_DDD\_\{suf\}} & Float & Block area statistics (m\textsuperscript{2}) & UA \\
-    \texttt{cc\_block\_perimeter\_\{stat\}\_DDD\_\{suf\}} & Float & Block perimeter statistics (m) & UA \\
-    \texttt{cc\_block\_compactness\_\{stat\}\_DDD\_\{suf\}} & Float & Block circular compactness & UA \\
-    \texttt{cc\_block\_orientation\_\{stat\}\_DDD\_\{suf\}} & Float & Block orientation (degrees) & UA \\
-    \texttt{cc\_block\_covered\_ratio\_\{stat\}\_DDD\_\{suf\}} & Float & Building coverage ratio (GSI) & UA + Ovt bldg \\
-    \texttt{cc\_block\_far\_\{stat\}\_DDD\_\{suf\}} & Float & Floor space index (FSI) & UA + Ovt bldg + CHM \\
-    \texttt{cc\_block\_osr\_\{stat\}\_DDD\_\{suf\}} & Float & Open space ratio ($= (1 - \text{GSI}) / \text{FSI}$) & UA + Ovt bldg + CHM \\
-    \texttt{cc\_block\_l\_\{stat\}\_DDD\_\{suf\}} & Float & Mean storeys ($= \text{FSI} / \text{GSI}$) & UA + Ovt bldg + CHM \\
-    \texttt{cc\_block\_mean\_height\_\{stat\}\_DDD\_\{suf\}} & Float & Area-weighted mean building height (m) & UA + Ovt bldg + CHM \\
-    \texttt{cc\_block\_DDD\_nw/wt} & Float & Block count (unweighted/weighted) & UA \\
-
-  \end{longtable}
-\end{landscape}
-
-\section{Complete Land-Use Classification Schema}
-\label{sec:landuse-schema}
-
-Table~\ref{tab:complete_landuse} provides the complete mapping from Overture Maps categories to the 11 analytical land-use classes.
-
-\footnotesize
-\begin{longtable}{@{}L{3cm}L{4.5cm}L{5cm}@{}}
-  \caption{Complete land-use classification schema mapping Overture categories to analytical classes.} \label{tab:complete_landuse} \\
-  \toprule
-  \textbf{Analytical Class} & \textbf{Intermediate Class} & \textbf{Overture Categories (examples)} \\
-  \midrule
-  \endfirsthead
-
-  \multicolumn{3}{c}%
-  {{\tablename\ \thetable{} -- continued from previous page}} \\
-  \toprule
-  \textbf{Analytical Class} & \textbf{Intermediate Class} & \textbf{Overture Categories (examples)} \\
-  \midrule
-  \endhead
-
-  \midrule
-  \multicolumn{3}{r}{{Continued on next page}} \\
-  \endfoot
-
-  \bottomrule
-  \endlastfoot
-
-  \multirow{3}{*}{eat\_and\_drink} & restaurant & restaurant, bistro, diner \\
-  & bar & bar, pub, lounge \\
-  & cafe & coffee\_shop, coffee\_roastery \\
-  \midrule
-
-  retail & retail & supermarket, grocery\_store, bookstore, florist, pharmacy \\
-  \midrule
-
-  \multirow{11}{*}{business\_and\_\allowbreak{}services} & automotive & car\_dealer, car\_wash \\
-  & beauty\_and\_spa & hair\_salon, nail\_salon, beauty\_salon \\
-  & financial\_service & bank\_credit\_union, insurance\_agency, accountant, tax\_services \\
-  & professional\_services & lawyer, cleaning\_services \\
-  & real\_estate & real\_estate, real\_estate\_agent \\
-  & travel & travel\_agents, visitor\_center \\
-  & home\_service & electrician, contractor, roofing \\
-  & business\_to\_business & coworking\_space, business \\
-  & private\_establishments\_\allowbreak{}and\_corporates & corporate\_office \\
-  & mass\_media & print\_media, radio\_station \\
-  & pets & veterinarian, pet\_services \\
-  \midrule
-
-  public\_services & public\_service\_\allowbreak{}and\_government & town\_hall, courthouse, post\_office, library, community\_center \\
-  \midrule
-
-  health\_and\_medical & health\_and\_medical & hospital, doctor, dentist, optometrist \\
-  \midrule
-
-  education & education & school, elementary\_school, high\_school, college\_university, driving\_school \\
-  \midrule
-
-  accommodation & accommodation & hotel, hostel, motel, guest\_house, bed\_and\_breakfast \\
-  \midrule
-
-  active\_life & active\_life & gym, swimming\_pool, playground, bowling\_alley \\
-  \midrule
-
-  arts\_and\_\allowbreak{}entertainment & arts\_and\_\allowbreak{}entertainment & cinema, theatre, arcade, auditorium \\
-  \midrule
-
-  attractions\_and\_\allowbreak{}activities & attractions\_and\_\allowbreak{}activities & museum, art\_gallery, monument, zoo, aquarium \\
-  \midrule
-
-  religious & religious\_organization & church\_cathedral, mosque, synagogue, temple \\
-  \midrule
-
-  \multicolumn{3}{l}{\textbf{Infrastructure Categories}} \\
-  \midrule
-
-  transport & (aggregated) & bus\_stop, bus\_station, railway\_station, subway\_station, ferry\_terminal, airport, aerialway\_station, helipad \\
-  \midrule
-
-  street\_furn & (aggregated) & bench, drinking\_water, fountain, plant, planter, post\_box, picnic\_table \\
-  \midrule
-
-  parking & (aggregated) & parking, motorcycle\_parking \\
-
-\end{longtable}
-\normalsize
-
-\section{Dataset Metadata}
-\label{sec:metadata}
-
-\subsection{GHSL Urban Centre Database (GHS-UCDB) R2024A}
-
-\begin{itemize}
-  \item \textbf{Source}: European Commission Joint Research Centre (JRC), Global Human Settlement Layer
-  \item \textbf{URL}: \url{https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php}
-  \item \textbf{Resolution}: 1km $\times$ 1km grid (DEGURBA methodology)
-  \item \textbf{Definition}: Contiguous cells with $\geq$1,500 inhabitants/km$^2$ (or $\geq$50\% built-up surface) and cumulative population $\geq$50,000
-  \item \textbf{Reference Year}: 2025 epoch
-  \item \textbf{Coverage}: Global (11,422 urban centres; filtered to continental Europe for SOAR-EU)
-  \item \textbf{License}: European Commission reuse policy (Decision 2011/833/EU)
-  \item \textbf{Processing}: Filtered to continental Europe (EPSG:3035), UK excluded
-\end{itemize}
-
-\subsection{Overture Maps Foundation -- Release 2026-05-20.0}
-
-\begin{itemize}
-  \item \textbf{Source}: Overture Maps Foundation
-  \item \textbf{URL}: \href{https://overturemaps.org/}{overturemaps.org}
-  \item \textbf{Release Date}: 2026-05-20
-  \item \textbf{Themes Used}:
-    \begin{itemize}
-      \item Places (POIs): 2,000+ categories
-      \item Buildings: Footprints with attributes
-      \item Transportation: Road network (connectors and segments)
-      \item Infrastructure: Transit stops, street furniture, parking
-    \end{itemize}
-  \item \textbf{Access Method}: STAC (SpatioTemporal Asset Catalog)
-  \item \textbf{License}: ODbL (Transportation, Buildings, Base); CDLA-Permissive-2.0 (Places)
-  \item \textbf{Processing}: Clipped to urban boundaries, transformed to EPSG:3035
-\end{itemize}
-
-\subsection{Copernicus Urban Atlas 2021}
-
-\begin{itemize}
-  \item \textbf{Source}: European Environment Agency / Copernicus Land Monitoring Service
-  \item \textbf{URL}: \url{https://land.copernicus.eu/en/products/urban-atlas/urban-atlas-2021}
-  \item \textbf{DOI}: \href{https://doi.org/10.2909/05ae1ee1-e550-4e66-b74d-4926322d981a}{10.2909/05ae1ee1-e550-4e66-b74d-4926322d981a}
-  \item \textbf{Reference Year}: 2021
-  \item \textbf{Resolution}: Minimum Mapping Unit (MMU) 0.25 ha for artificial surfaces
-  \item \textbf{Classification}: 28 land cover/use classes (19 urban at 0.25\,ha MMU, 9 rural at 1\,ha MMU)
-  \item \textbf{Coverage}: 790 Functional Urban Areas (FUAs) across EU
-  \item \textbf{License}: Copernicus data policy (Regulation (EU) No 1159/2013)
-  \item \textbf{Processing}: Extracted urban blocks, green spaces; clipped to GHS-UCDB boundaries
-  \item \textbf{Green space classes used}: Green urban areas -- public access (14110) and unknown access (14130); Forests (31000), Herbaceous vegetation associations (32000), Open spaces with little or no vegetation (33000), Wetlands (40000), Water (50000), Pastures (23000), Arable land -- annual crops (21000), Permanent crops -- vineyards, fruit trees, olive groves (22000), Complex and mixed cultivation patterns (24000), Orchards at the fringe of urban classes (25000). Sports and leisure facilities (14200) are conditionally included when building coverage is below 20\%
-\end{itemize}
-
-\subsection{Copernicus Street Tree Layer 2021}
-
-\begin{itemize}
-  \item \textbf{Source}: European Environment Agency / Copernicus Land Monitoring Service
-  \item \textbf{URL}: \url{https://land.copernicus.eu/en/products/urban-atlas/street-tree-layer-stl-2021}
-  \item \textbf{Reference Year}: 2021
-  \item \textbf{Resolution}: 0.5\,m spatial resolution
-  \item \textbf{Method}: Very High Resolution imagery interpretation
-  \item \textbf{Coverage}: Street trees in Urban Atlas FUAs
-  \item \textbf{License}: Copernicus data policy (Regulation (EU) No 1159/2013)
-  \item \textbf{Processing}: Clipped to GHS-UCDB boundaries; used for tree proximity calculations
-\end{itemize}
-
-\subsection{Copernicus Building Height 2012}
-
-\begin{itemize}
-  \item \textbf{Source}: European Environment Agency / Copernicus Land Monitoring Service
-  \item \textbf{URL}: \url{https://land.copernicus.eu/en/products/urban-atlas/building-height-2012}
-  \item \textbf{Reference Year}: 2012
-  \item \textbf{Resolution}: 10\,m $\times$ 10\,m raster
-  \item \textbf{Method}: Digital Height Model (DHM) derived from stereo imagery
-  \item \textbf{Units}: Metres above ground
-  \item \textbf{Coverage}: Urban Atlas FUAs
-  \item \textbf{License}: Copernicus data policy (Regulation (EU) No 1159/2013)
-  \item \textbf{Processing}: Sampled by buffering each building footprint by 10\,m and averaging valid (non-null) overlapping pixel values; footprints with no valid pixel coverage receive NaN
-\end{itemize}
-
-\subsection{Eurostat Census Grid 2021}
-
-\begin{itemize}
-  \item \textbf{Source}: Eurostat GEOSTAT project
-  \item \textbf{URL}: \url{https://ec.europa.eu/eurostat/web/gisco/geodata/}\\\url{population-distribution/population-grids}
-  \item \textbf{Reference Year}: 2021 (Census round)
-  \item \textbf{Resolution}: 1km $\times$ 1km grid (INSPIRE compliant)
-  \item \textbf{Variables}: Population, employment, demographics, migration
-  \item \textbf{Coverage}: EU27 + EFTA
-  \item \textbf{License}: European Commission reuse policy (Decision 2011/833/EU); note that Eurostat applies additional dataset-specific download terms for the census population grids (\texttt{TOT\_P\_2006}, \texttt{TOT\_P\_2011}, \texttt{TOT\_P\_2018}, \texttt{TOT\_P\_2021}) on top of the general reuse policy; users redistributing or extending derivative work should consult the GISCO metadata page above for the current population-grid terms.
-  \item \textbf{Processing}: Interpolated to street-segment midpoints via grid cell centroids
-\end{itemize}
-
-\section{POI Source-Substitution: Methods and Additional Results}
-\label{sec:poi-supp}
-
-This supplement provides methodological detail for the POI-source substitution replication described in \S\ref{sec:poi-pattern-characterisation}.
-
-\subsection{Data sources and harmonisation}
-\label{sec:poi-supp-data}
-
-The granularity difference between SIRENE and BAG, and its implications for interpreting the cross-country results, is discussed in the main text (\S\ref{sec:poi-pattern-characterisation}). This subsection documents the registry extracts and category mapping used in the replication. Reference set: \NRefCities{} cities (\NRefCitiesFr{} via SIRENE \cite{sirene2026}; \NRefCitiesNl{} via BAG \cite{bag2026}). The codebase records the exact registry extracts used (snapshot dates and filters) alongside the generated outputs.
-
-\subsection{Agreement metrics}
-\label{sec:poi-supp-metrics}
-
-Agreement is computed on the SOAR-EU street-segment set for each city, category, and distance threshold. Catchment-based metrics are evaluated at distances of 200, 400, 800, 1200, and 1600\,m; nearest-distance metrics at tolerances of 50, 100, 200, 400, 800, 1200, and 1600\,m. Let $a_u$ and $b_u$ denote the accessibility values (or derived indicators) at segment $u$ under the Overture and registry POI sources, respectively.
-
-\paragraph{Segment-level rank agreement ($\rho$)} For catchment-based accessibility measures (counts and weighted counts), we compute Spearman's rank correlation between $\{a_u\}$ and $\{b_u\}$ across segments. Because Spearman $\rho$ is rank-based and invariant to monotone rescaling, we report values on raw counts.
-
-\paragraph{Hotspot overlap} For each city we identify the top 10\% of segments under each source (by accessibility value; ties broken deterministically) and compute the overlap
-\[
-  \mathrm{overlap}=\frac{|A\cap B|}{|A|},\quad |A|=|B|=\lceil 0.1\,|U|\rceil
-\]
-where $U$ is the set of live segments (segments falling within the city boundary, excluding buffer-zone segments used only for computational context) and $A$ and $B$ are the top-decile segment sets under each source. An overlap of 0.6 means roughly 6 in 10 high-accessibility locations are consistently identified across sources.
-
-\paragraph{Nearest-within-tolerance agreement (F1)} For tolerance $t$ (50--1600\,m), define the binary indicator $p_u(t)=\mathbb{1}[\mathrm{nearest}_a(u)\leq t]$ and $q_u(t)=\mathbb{1}[\mathrm{nearest}_b(u)\leq t]$. We report the F1 score (harmonic mean of precision and recall) between $\{p_u(t)\}$ and $\{q_u(t)\}$ across segments, alongside precision/recall diagnostics.
-
-\paragraph{Between-city ordering} For catchment-based metrics, we test whether city-level summaries are consistent across sources. Each city's accessibility distribution is summarised by its median count (for count comparisons) and the median of its top-decile counts (for hotspot intensity comparisons). We report Spearman $\rho$ computed across the \NRefCities{} cities, treating each city's summary statistic as a single observation. Bootstrap confidence intervals are obtained by resampling cities with replacement ($B=2{,}000$).
-
-\paragraph{City-level nearest share agreement (harmonic mean)} For each city, the ``share within tolerance'' is the proportion of segments with $\mathrm{nearest} \leq t$. We summarise agreement in these shares using their harmonic mean
-\[
-  H(p,q)=\frac{2pq}{p+q},
-\]
-where $p$ and $q$ are the per-city shares under each source. This symmetric agreement score on prevalence levels, which we term the \emph{share harmonic mean}, is analogous to the S{\o}rensen--Dice coefficient. We report the median across cities.
-
-\subsection{Bootstrap uncertainty}
-\label{sec:poi-supp-bootstrap}
-
-Uncertainty is estimated at two levels.
-
-\emph{Within-city}: per-city agreement statistics (Spearman $\rho$, hotspot overlap, nearest F1) are accompanied by spatial block bootstrap confidence intervals. Segments are assigned to square grid cells whose side length equals the catchment distance being tested (e.g.\ 200\,m blocks for the 200\,m metric, 1{,}600\,m blocks for the 1{,}600\,m metric), blocks are resampled with replacement ($B=200$), and the statistic is recomputed on each resample. This distance-adaptive blocking matches the spatial autocorrelation range at each scale, avoiding both under-estimation of uncertainty (blocks too small relative to the catchment, failing to account for the spatial dependence the metric induces) and unnecessary loss of power (blocks too large, discarding within-block information). For the summary plots and heatmap, we report the median score across cities alongside the median of the per-city block-bootstrap CI bounds, so that the displayed confidence band reflects typical within-city spatial uncertainty rather than a single city's interval.
-
-\emph{Between-city}: the city-level bootstrap ($B=2{,}000$ resamples with replacement) treats each city as an independent observation, quantifying the sensitivity of the cross-city median to the composition of the reference set.
-
-These intervals quantify sampling variability within the French--Dutch reference set; they do not bound potential differences in Overture coverage patterns for cities outside this reference region.
-
-\subsection{Reference thresholds}
-\label{sec:poi-supp-decision}
-
-Agreement scores are reported continuously with bootstrap CIs. For convenience, Table~\ref{tab:pointa_minima} shows the minimum spatial scale at which the median score first reaches four concordance thresholds ($\geq$70\%, $\geq$75\%, $\geq$80\%, $\geq$85\%). Concordance expresses the fraction of pairwise comparisons on which both sources agree: for rank-correlation metrics it equals $(1+\tau)/2$ where $\tau$ is the Kendall rank correlation, computed directly from the data (corresponding $\tau$ thresholds: $\geq$0.40, 0.50, 0.60, 0.70). This gives the proportion of observation pairs (nodes within a city, or cities in the cross-city comparison) ranked in the same order by both Overture and the official registry. For hotspot overlap and F1 metrics, the score is already a proportion and the concordance fraction is used directly as the threshold.
-
-\subsection{Agreement curves}
-\label{sec:poi-supp-agreement-curves}
-
-\begin{figure}[!htb]
-  \centering
-  \includegraphics[width=\textwidth]{outputs/figures/fig_pointa_agreement_panels.pdf}
-  \caption{\textbf{POI source-substitution agreement by category, task, and spatial scale.}
-    \NRefCities{} reference cities. Top row (within-city): (A)~rank correlation (Spearman $\rho$), (B)~hotspot overlap, and (C)~nearest-within-tolerance F1; shaded bands show 95\% spatial block bootstrap CIs (distance-adaptive blocks, $B=200$). Bottom row (between-city): (D)~Spearman $\rho$ on city-level median counts, (E)~Spearman $\rho$ on city-level hotspot intensity, and (F)~harmonic-mean agreement of city-level nearest shares; shaded bands show 95\% city-level bootstrap CIs ($B=2{,}000$).
-  }
-  \label{fig:pointa_agreement_panels}
-\end{figure}
-
-\subsection{Per-city variability}
-\label{sec:poi-supp-city-variability}
-
-The main-text figures report median agreement across reference cities. Figure~\ref{fig:pointa_city_variability} shows the underlying per-city distributions at two representative catchment distances (400\,m and 800\,m). The strip plots confirm that the medians are not driven by a small number of outlier cities: at 800\,m most categories have tight distributions for rank correlation, with the bulk of cities exceeding 80\% concordance. Accommodation and Health \& Medical remain consistently the weakest categories with the widest spreads. Figure~\ref{fig:pointa_cross_city_scatter} complements this by plotting city-level median accessibility (log-transformed counts) from Overture against registry values at 800\,m; points falling below the identity line indicate systematic undercounting by Overture, particularly for Retail and Eat \& Drink.
-
-\begin{figure}[p]
-  \centering
-  \includegraphics[width=0.88\textwidth]{outputs/figures/fig_pointa_city_variability.pdf}
-  \caption{\textbf{Per-city rank correlation spread.}
-    Distribution of Spearman $\rho$ (segment-level unweighted counts) across \NRefCities{} reference cities at 400\,m and 800\,m catchments. Points show individual cities; diamonds mark medians.
-  }
-  \label{fig:pointa_city_variability}
-
-  \vspace{0.5em}
-
-  \includegraphics[width=0.88\textwidth]{outputs/figures/fig_pointa_cross_city_scatter.pdf}
-  \captionof{figure}{\textbf{Cross-city comparison at 800\,m catchment.}
-    Each point is one reference city. Axes show median log-transformed POI counts from registry and Overture sources; the dashed line marks identity. The predominance of points below the line indicates systematic undercounting by Overture, especially for Retail and Eat \& Drink.
-  }
-  \label{fig:pointa_cross_city_scatter}
-\end{figure}
-
-\subsection{Distance-weighted accessibility}
-\label{sec:poi-supp-weighted}
-
-The main-text results use unweighted POI counts (the number of establishments reachable within each catchment distance). An alternative is distance-weighted counts, where each POI's contribution decays with network distance, giving greater weight to nearer establishments.
-
-At the same catchment distance, weighted counts produce lower concordance than unweighted counts (typically 3--5 percentage points for rank correlation, 5--8 for hotspot overlap), because the gravity weighting amplifies the effect of small geocoding offsets between sources. However, the weighted measure at 800\,m still exceeds the unweighted measure at 400\,m across all categories, since the larger catchment more than compensates for the concordance lost to weighting. This is relevant for applications that prefer distance-weighted accessibility: reliable concordance is achievable at 800\,m or above. The nearest-distance columns are unchanged, as they do not involve count aggregation.
-
-\clearpage
-\section{Building Footprint Source Composition and Metric Sensitivity}
-\label{sec:bldg-supp}
-
-This supplement documents the provenance composition of the Overture Maps building footprints used in SOAR-EU and quantifies its effect on derived morphometric indicators.
-
-\subsection{Source classification}
-\label{sec:bldg-supp-classification}
-
-Each Overture building footprint carries a \texttt{sources} JSON array whose first element identifies the contributing dataset. We classify these into two groups: \emph{community-contributed} (OpenStreetMap, Esri Community Maps, national cadastral agencies) and \emph{ML-derived} (Microsoft ML Buildings, Google Open Buildings). Community-contributed footprints are digitised or imported from authoritative cadastral sources and generally preserve individual building boundaries; ML-derived footprints are segmented from satellite imagery and may merge adjacent buildings into single polygons or introduce unintended gaps between genuinely attached structures.
-
-Across the \NCitiesTotal{} cities, the footprints draw on several source datasets: OpenStreetMap (dominant in most European cities), Esri Community Maps, Microsoft ML Buildings, and, in Spain, the Instituto Geogr\'{a}fico Nacional cadastre. Country-level aggregates reveal a clear geographic gradient (Table~\ref{tab:building_source_country}; Figure~\ref{fig:building_source_map}): the Netherlands, France, Switzerland, and Belgium are dominated by community sources, while Romania, Spain, Greece, and Bulgaria rely substantially on ML-derived footprints. The per-city ML fraction (Min and Max columns of Table~\ref{tab:building_source_country}) spans from zero in several cadastral-import cities to a large majority in the most ML-reliant. Per-city counts by dataset and country-level summaries are provided in the accompanying CSV files.
-
-\begin{table}[!htb]
-  \centering
-  \caption{Building footprint source composition by country, sorted by ML-derived fraction (ascending). ML~(\%) is the proportion of footprints from ML-derived sources (primarily Microsoft ML Buildings); Min and Max show the per-city range within each country.}
-  \label{tab:building_source_country}
-  \scriptsize
-  \input{outputs/tables/table_building_source_country}
-\end{table}
-
-\begin{figure}[!htb]
-  \centering
-  \includegraphics[width=\textwidth]{outputs/figures/fig_building_source_map.pdf}
-  \caption{ML-derived building footprint fraction across the \NCitiesTotal{} SOAR-EU urban centres. Cities in western and northern Europe (France, Netherlands, Belgium, Germany) are dominated by community-contributed sources; cities in southern and eastern Europe (Romania, Spain, Greece, Bulgaria) rely more heavily on ML-derived footprints.}
-  \label{fig:building_source_map}
-\end{figure}
-
-\subsection{Effect on morphometric indicators}
-\label{sec:bldg-supp-sensitivity}
-
-We test for source-driven bias at two levels.
-
-\paragraph{Cross-city correlations.} For each morphometric indicator, we compute the Spearman correlation between each city's ML fraction and its median metric value across the \NCitiesTotal{} cities (Table~\ref{tab:building_metric_sensitivity}). Shared wall ratio shows the strongest negative association: cities with more ML-derived buildings have lower shared wall ratios. This cross-city correlation conflates two effects: a genuine morphological gradient (countries with higher ML fractions---Romania, Bulgaria, Greece---also have more freestanding housing stock) and a data artefact (ML-derived footprints underestimate shared walls due to polygon boundary gaps). The within-city test below isolates the artefact component. Perimeter, area, and volume are also positively associated, partly reflecting the tendency of ML segmentation to merge adjacent buildings into larger polygons and partly reflecting genuinely larger building footprints in lower-density settings. Fractal dimension and corner count show weaker but significant associations, while compactness, shape index, and orientation show no significant association with source composition.
-
-\paragraph{Within-city comparisons.} To isolate the data artefact from genuine morphological differences between countries, we compare community and ML-derived buildings \emph{within the same city} using Mann-Whitney $U$ tests, restricted to cities containing both source types (Table~\ref{tab:building_metric_sensitivity}). Shared wall ratio shows a consistent within-city difference, significant in nearly all such cities: ML-derived buildings have lower shared wall ratios than community-contributed buildings in the same urban context, confirming a per-building artefact independent of cross-country morphological variation. Corner count and fractal dimension are also affected within cities, while compactness and shape index show small but widespread differences.
-
-Block-level density metrics (GSI, FSI) show no meaningful cross-city association with ML fraction, likely because ML footprints add buildings in areas where community mapping is sparse, compensating for any area inflation from polygon merging. Table~\ref{tab:building_metric_sensitivity} summarises all cross-city and within-city results.
-
-\begin{table}[!htb]
-  \centering
-  \caption{Sensitivity of building morphometric indicators to data source composition. Cross-city $\rho$: Spearman correlation between city ML fraction and city median metric value, across all \NCitiesTotal{} cities. Within-city $r$: median rank-biserial correlation from Mann-Whitney $U$ tests comparing community and ML-derived buildings within each city, restricted to cities containing both source types. Significance: {*}{*}{*}\,$p < 0.001$, {*}{*}\,$p < 0.01$, {*}\,$p < 0.05$.}
-  \label{tab:building_metric_sensitivity}
-  \scriptsize
-  \input{outputs/tables/table_building_metric_sensitivity}
-\end{table}
-
-\subsection{Street-frontage ratio}
-\label{sec:bldg-supp-frontage}
-
-To provide a source-robust continuity measure, we compute a bilateral street-frontage ratio for each street segment. The computation proceeds as follows: (1)~buffer the street centreline by 35\,m to define a corridor (wide enough to capture building edges that address the street across a typical European front-garden or setback depth, narrow enough to exclude buildings on the next parallel street); (2)~identify all building edges whose midpoint falls inside the corridor and whose nearest street is this one (preventing cross-street contamination); (3)~classify each edge as left or right of the centreline using the local street tangent; (4)~per side, retain only edges within 5\,m of the closest edge, filtering out rear extensions and garages while preserving the primary facade line (5\,m is chosen to span typical facade step-ins and arcades without admitting rear-yard structures); (5)~project retained edges onto the centreline, merge overlapping intervals, and compute coverage as the fraction of street length covered (3\,m trimmed from each end as a junction guard, removing the short overlap where a corner property's facade would otherwise count toward both intersecting streets); (6)~the reported score (\texttt{frontage\_max}) is the maximum of the two sides. Per-side scores (\texttt{frontage\_left}, \texttt{frontage\_right}), their mean (\texttt{frontage\_avg}), and per-side edge counts (\texttt{frontage\_edges\_left}, \texttt{frontage\_edges\_right}) are also retained.
-
-Unlike shared wall ratio, which requires exact topological contact between adjacent polygon boundaries, frontage ratio depends only on building \emph{presence} along the street edge. Whether two adjacent terraced houses are represented as separate touching polygons (community-digitised) or as a single merged polygon (ML-derived), the frontage coverage is the same. Across the \NCitiesTotal{} cities, the association between city-level ML fraction and median frontage ratio is substantially weaker than the corresponding shared-wall-ratio association (Table~\ref{tab:building_metric_sensitivity}). Because frontage is largely immune to the polygon-merging artefact that the within-city test identifies for shared wall ratio, this weaker residual association most likely reflects a predominantly genuine morphological gradient (countries with higher ML fractions also tend toward more freestanding housing) rather than a measurement artefact.
+\input{supplementary_sections}
 
 \end{document}
