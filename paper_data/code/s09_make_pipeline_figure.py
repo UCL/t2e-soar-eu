@@ -211,7 +211,7 @@ def main() -> int:
     ax.text(
         CX,
         0.9,
-        "GeoPackage  \u00b7  EPSG:3035  \u00b7  614 cities \u00d7 3 layers each",
+        "GeoPackage  \u00b7  EPSG:3035  \u00b7  626 cities \u00d7 3 layers each",
         ha="center",
         va="center",
         fontsize=7.5,

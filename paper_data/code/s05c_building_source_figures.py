@@ -85,7 +85,7 @@ def make_sensitivity_table():
     lines = [
         r"\begin{tabular}{@{}lrrrl@{}}",
         r"  \toprule",
-        r"  \textbf{Metric} & \textbf{Cross-city $\rho$} & \textbf{$p$} & \textbf{Within-city $r$} & \\",
+        r"  \textbf{Metric} & \textbf{Cross-city $\rho$} & \textbf{$p$} & \textbf{Within-city $r$} & \textbf{Sig.} \\",
         r"  \midrule",
     ]
     for _, row in corr.iterrows():
@@ -100,9 +100,8 @@ def make_sensitivity_table():
             r_str = "---"
         stars = "***" if p < 0.001 else "**" if p < 0.01 else "*" if p < 0.05 else ""
         p_str = f"$<$0.001" if p < 0.001 else f"{p:.3f}"
-        lines.append(
-            f"  {metric.replace('_', ' ').title()} & {rho:+.3f} & {p_str} & {r_str} & {stars} \\\\"
-        )
+        label = metric.replace("_", " ").title().replace("Gsi", "GSI").replace("Fsi", "FSI")
+        lines.append(f"  {label} & {rho:+.3f} & {p_str} & {r_str} & {stars} \\\\")
     lines.extend([r"  \bottomrule", r"\end{tabular}"])
 
     out = TABLE_DIR / "table_building_metric_sensitivity.tex"

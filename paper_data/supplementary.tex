@@ -29,6 +29,14 @@
 % Allow line breaks after underscores in long \texttt{} filenames.
 \renewcommand{\_}{\textunderscore\allowbreak}
 
+\makeatletter
+\pdfstringdefDisableCommands{%
+  \def\corref#1{}%
+  \def\cnotenum{}%
+  \def\@corref#1{}%
+}
+\makeatother
+
 % Auto-generated statistics macros (from paper_stats.json)
 \input{outputs/paper_macros}
 
@@ -62,6 +70,12 @@
 
 \appendix
 \renewcommand{\thesection}{S\arabic{section}}
+% Sequential S-numbering for supplementary floats, matching the combined
+% manuscript's appendix so main-text cross-references resolve in both documents.
+\setcounter{figure}{0}
+\setcounter{table}{0}
+\renewcommand{\thefigure}{S\arabic{figure}}
+\renewcommand{\thetable}{S\arabic{table}}
 
 \input{supplementary_sections}
 

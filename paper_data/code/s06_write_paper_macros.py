@@ -74,6 +74,10 @@ def update_stats():
     if coverage_csv.exists():
         cov = pd.read_csv(coverage_csv)
 
+        # Total street segments across all cities (millions)
+        streets_n = cov[cov["layer"] == "streets"].groupby("bounds_fid")["n_features"].max()
+        stats["n_segments_total_m"] = round(float(streets_n.sum() / 1e6), 1)
+
         # Building height coverage
         bh = cov[(cov["layer"] == "buildings") & (cov["column"] == "mean_height")]
         if not bh.empty:
@@ -81,19 +85,25 @@ def update_stats():
             stats["n_cities_no_height"] = int((bh["coverage"] == 0.0).sum())
             stats["median_height_coverage"] = round(float(bh["coverage"].median() * 100))
 
-        # Block contextual morphology metrics at 100m (exclude count columns
-        # like cc_block_100_nw which are always complete)
-        block100 = cov[
+        # Block contextual morphology metrics at 200m. Coverage differs by
+        # metric group (geometry > FAR/GSI/L > height-dependent), so report
+        # the range of per-column median coverage. Count columns
+        # (cc_block_200_nw) and area sums (always complete) are excluded.
+        block200 = cov[
             (cov["layer"] == "streets")
             & cov["column"].str.startswith("cc_block_")
             & cov["column"].str.contains("_200_")
             & ~cov["column"].str.match(r"^cc_block_\d+_")
+            & ~cov["column"].str.startswith("cc_block_area_sum")
         ]
-        if not block100.empty:
-            # Use one representative column (all have identical coverage)
-            rep = block100[block100["column"] == block100["column"].iloc[0]]
-            stats["median_block100_coverage"] = round(float(rep["coverage"].median() * 100))
-            stats["n_cities_no_blocks"] = int((rep["coverage"] == 0.0).sum())
+        if not block200.empty:
+            per_col = block200.groupby("column")["coverage"].median() * 100
+            stats["median_block200_coverage_min"] = round(float(per_col.min()))
+            stats["median_block200_coverage_max"] = round(float(per_col.max()))
+            # Cities with no qualifying blocks at all: zero coverage on the
+            # best-covered (geometry) column, so missing heights don't inflate it.
+            best = block200[block200["column"] == per_col.idxmax()]
+            stats["n_cities_no_blocks"] = int((best["coverage"] == 0.0).sum())
 
         # Employment demographics coverage
         emp = cov[(cov["layer"] == "streets") & (cov["column"] == "emp")]
@@ -128,22 +138,6 @@ def update_stats():
         if accom is not None:
             stats["poi_near_dist_accom_m"] = int(accom)
 
-    # Within-city displacement stats at rho >= 0.80
-    rank_csv = OUTPUT_DIR / "csv" / "pointa_rank_displacement.csv"
-    if rank_csv.exists():
-        df = pd.read_csv(rank_csv)
-        sub = df[(df["metric"] == "count_nw") & (df["n_nonzero"] >= 20)].dropna(subset=["spearman_rho", "mapd"])
-        above = sub[sub["spearman_rho"] >= 0.8]
-        if not above.empty:
-            baseline_mapd = 100 - 50 * np.sqrt(2)
-            mapd_val = above["mapd"].median()
-            t10_val = above["top10_overlap"].median()
-            skill_pct = 1 - mapd_val / baseline_mapd
-            stats["within_mapd"] = round(float(mapd_val), 1)
-            stats["within_mapd_skill_pct"] = round(float(skill_pct * 100))
-            stats["within_top10_overlap"] = round(float(t10_val), 2)
-            stats["baseline_mapd"] = round(float(baseline_mapd), 1)
-
     return stats
 
 
@@ -162,12 +156,14 @@ def generate_macros(stats: dict) -> str:
         "n_ref_cities_fr": ("NRefCitiesFr", None),
         "n_ref_cities_nl": ("NRefCitiesNl", None),
         "n_non_ref_cities": ("NNonRefCities", None),
+        "n_segments_total_m": ("NSegmentsTotalM", None),
         "n_cities_low_height": ("NCitiesLowHeight", "Data Coverage"),
         "n_cities_no_height": ("NCitiesNoHeight", None),
         "n_cities_with_heights_raster": ("NCitiesWithHeightsRaster", None),
         "bldg_heights_age_years": ("BldgHeightsAgeYears", None),
         "median_height_coverage": ("MedianHeightCoverage", None),
-        "median_block100_coverage": ("MedianBlockHundredCoverage", None),
+        "median_block200_coverage_min": ("MedianBlockCoverageMin", None),
+        "median_block200_coverage_max": ("MedianBlockCoverageMax", None),
         "n_cities_no_blocks": ("NCitiesNoBlocks", None),
         "n_cities_no_employment": ("NCitiesNoEmployment", None),
         "dataset_total_compressed_gb": ("DatasetTotalCompressedGB", "Dataset Size"),
@@ -177,10 +173,6 @@ def generate_macros(stats: dict) -> str:
         "poi_near_dist_good_m": ("PoiNearDistGoodM", "POI Validation Thresholds"),
         "poi_near_dist_other_m": ("PoiNearDistOtherM", None),
         "poi_near_dist_accom_m": ("PoiNearDistAccomM", None),
-        "baseline_mapd": ("BaselineMAPD", "Displacement Stats"),
-        "within_mapd": ("WithinMAPD", None),
-        "within_mapd_skill_pct": ("WithinMAPDSkillPct", None),
-        "within_top10_overlap": ("WithinTopTenOverlap", None),
     }
 
     current_section = None

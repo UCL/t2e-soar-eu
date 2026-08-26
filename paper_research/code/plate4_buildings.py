@@ -361,7 +361,7 @@ def main():
 
     # Full dataset — supplementary
     print("\n── Full dataset — supplementary ──")
-    build_plate(df, OUTPUT_DIR / "plate4_buildings_full.pdf", subtitle_extra="all 626 cities")
+    build_plate(df, OUTPUT_DIR / "plate4_buildings_full.pdf", subtitle_extra=f"all {df['bounds_fid'].nunique()} cities")
 
 
 if __name__ == "__main__":

@@ -18,8 +18,8 @@ from pathlib import Path
 
 # ── Force flags: True = rebuild from scratch, False = reuse existing outputs ──
 FORCE_REGISTRY = False   # s00      SIRENE/BAG prep (slow; deterministic from raw files)
-FORCE_POI = False        # s01-s04  POI source-substitution (slow; per-city recompute)
-FORCE_FRONTAGE = True    # s05b     35 m frontage backfill into GeoPackages
+FORCE_POI = False        # s01-s04  POI source-substitution (rerun 2026-08-26 under cityseer 5.8; s01 resumes from its parquets)
+FORCE_FRONTAGE = False   # s05b     35 m frontage backfill (frontage is computed in-pipeline by generate_metrics)
 FORCE_CACHE = True        # atlas    per-city parquet cache
 WORKERS = "8"
 # The derived layer (data-paper figures/tables/macros + atlas plates) always
@@ -49,7 +49,9 @@ DATA = data_dir()
 
 def run(*argv: str) -> None:
     print(f"\n$ {' '.join(argv)}", flush=True)
-    subprocess.run([sys.executable, *argv], cwd=ROOT, check=True)
+    # scripts import from src/, so the repo root must be on the module path
+    env = {**os.environ, "PYTHONPATH": str(ROOT)}
+    subprocess.run([sys.executable, *argv], cwd=ROOT, check=True, env=env)
 
 
 def rm(*globs: str) -> None:
@@ -95,6 +97,7 @@ rm(str(ROOT / "paper_data/outputs/completeness_coverage.csv"),
 run("paper_data/code/s05_audit_processed_outputs.py", "--workers", WORKERS)
 run("paper_data/code/s05a_audit_building_sources.py", "--workers", WORKERS)
 run("paper_data/code/s05c_building_source_figures.py")
+run("paper_data/code/fig_metric_families.py")
 run("paper_data/code/s07_make_example_metric_figure.py")
 run("paper_data/code/s08_make_poi_source_comparison_figure.py")
 run("paper_data/code/s09_make_pipeline_figure.py")
@@ -107,7 +110,7 @@ run("paper_research/code/supplement_figures.py")
 for p in (
     "plate1_exemplars", "plate2_3_ripples_lines", "plate4_buildings", "plate5_access",
     "plate6_service_desert", "plate7_unevenness", "plate8_demographics", "plate9_scanlines",
-    "plate10_comparisons", "plate11_density_form", "plate12_density_access",
+    "plate10_comparisons", "plate11_density_form", "plate12_formspace",
 ):
     run(f"paper_research/code/{p}.py")
 run("paper_research/code/atlas_figures/frontage_validation.py")

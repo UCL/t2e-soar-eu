@@ -51,8 +51,8 @@ def extract_boundary_polys(ucdb_in_path: str, bounds_out_path: str) -> None:
     tools.validate_filepath(ucdb_in_path)
     tools.validate_directory(bounds_out_path, create=True)
     # bounding box to filter out remote islands (e.g. Madeira, overseas territories)
-    eu_bounds = [2500000, 1250000, 7000000, 5000000]  # E, S, W, N - EPSG:3035
-    logger.info(f"Clipping polygons outside of hard-coded EU boundary: {eu_bounds} (ESWN / EPSG:3035)")
+    eu_bounds = [2500000, 1250000, 7000000, 5000000]  # W, S, E, N - EPSG:3035
+    logger.info(f"Clipping polygons outside of hard-coded EU boundary: {eu_bounds} (WSEN / EPSG:3035)")
     eu_boundary = geometry.box(*eu_bounds)  # type: ignore
     # load GHS-UCDB vector boundaries
     logger.info(f"Loading GHS-UCDB boundaries from {ucdb_in_path}")

@@ -35,6 +35,7 @@ The streets layer contains street segments with computed metrics. Distance thres
     \texttt{ns\_node\_idx} & Integer & Internal network node index & Ovt net \\
     \texttt{x} & Float & Segment midpoint X coordinate (EPSG:3035) & Ovt net \\
     \texttt{y} & Float & Segment midpoint Y coordinate (EPSG:3035) & Ovt net \\
+    \texttt{seg\_length} & Float & Street segment length (m) & Ovt net \\
     \midrule
 
     \multicolumn{4}{l}{\textbf{Network Centrality (Segment-Based, DDD = 400, 800, 1200, 1600, 4800, 9600)}} \\
@@ -104,6 +105,8 @@ The streets layer contains street segments with computed metrics. Distance thres
     \texttt{frontage\_avg} & Float & Mean of left and right frontage coverage & Ovt bldg \\
     \texttt{frontage\_left} & Float & Left-side frontage coverage & Ovt bldg \\
     \texttt{frontage\_right} & Float & Right-side frontage coverage & Ovt bldg \\
+    \texttt{frontage\_edges\_left} & Integer & Count of building edges contributing to left-side coverage & Ovt bldg \\
+    \texttt{frontage\_edges\_right} & Integer & Count of building edges contributing to right-side coverage & Ovt bldg \\
     \midrule
 
     \multicolumn{4}{l}{\textbf{Green Space Proximity (DDD = 200, 400, 800)}} \\
@@ -244,7 +247,7 @@ Table~\ref{tab:complete_landuse} provides the complete mapping from Overture Map
   \item \textbf{Definition}: Contiguous cells with $\geq$1,500 inhabitants/km$^2$ (or $\geq$50\% built-up surface) and cumulative population $\geq$50,000
   \item \textbf{Reference Year}: 2025 epoch
   \item \textbf{Coverage}: Global (11,422 urban centres; filtered to continental Europe for SOAR-EU)
-  \item \textbf{License}: European Commission reuse policy (Decision 2011/833/EU)
+  \item \textbf{Licence}: European Commission reuse policy (Decision 2011/833/EU)
   \item \textbf{Processing}: Filtered to continental Europe (EPSG:3035), UK excluded
 \end{itemize}
 
@@ -262,7 +265,7 @@ Table~\ref{tab:complete_landuse} provides the complete mapping from Overture Map
       \item Infrastructure: Transit stops, street furniture, parking
     \end{itemize}
   \item \textbf{Access Method}: STAC (SpatioTemporal Asset Catalog)
-  \item \textbf{License}: ODbL (Transportation, Buildings, Base); CDLA-Permissive-2.0 (Places)
+  \item \textbf{Licence}: ODbL (Transportation, Buildings, Base); CDLA-Permissive-2.0 (Places)
   \item \textbf{Processing}: Clipped to urban boundaries, transformed to EPSG:3035
 \end{itemize}
 
@@ -276,7 +279,7 @@ Table~\ref{tab:complete_landuse} provides the complete mapping from Overture Map
   \item \textbf{Resolution}: Minimum Mapping Unit (MMU) 0.25 ha for artificial surfaces
   \item \textbf{Classification}: 28 land cover/use classes (19 urban at 0.25\,ha MMU, 9 rural at 1\,ha MMU)
   \item \textbf{Coverage}: 790 Functional Urban Areas (FUAs) across EU
-  \item \textbf{License}: Copernicus data policy (Regulation (EU) No 1159/2013)
+  \item \textbf{Licence}: Copernicus data policy (Regulation (EU) No 1159/2013)
   \item \textbf{Processing}: Extracted urban blocks, green spaces; clipped to GHS-UCDB boundaries
   \item \textbf{Green space classes used}: Green urban areas -- public access (14110) and unknown access (14130); Forests (31000), Herbaceous vegetation associations (32000), Open spaces with little or no vegetation (33000), Wetlands (40000), Water (50000), Pastures (23000), Arable land -- annual crops (21000), Permanent crops -- vineyards, fruit trees, olive groves (22000), Complex and mixed cultivation patterns (24000), Orchards at the fringe of urban classes (25000). Sports and leisure facilities (14200) are conditionally included when building coverage is below 20\%
 \end{itemize}
@@ -290,7 +293,7 @@ Table~\ref{tab:complete_landuse} provides the complete mapping from Overture Map
   \item \textbf{Resolution}: 0.5\,m spatial resolution
   \item \textbf{Method}: Very High Resolution imagery interpretation
   \item \textbf{Coverage}: Street trees in Urban Atlas FUAs
-  \item \textbf{License}: Copernicus data policy (Regulation (EU) No 1159/2013)
+  \item \textbf{Licence}: Copernicus data policy (Regulation (EU) No 1159/2013)
   \item \textbf{Processing}: Clipped to GHS-UCDB boundaries; used for tree proximity calculations
 \end{itemize}
 
@@ -304,7 +307,7 @@ Table~\ref{tab:complete_landuse} provides the complete mapping from Overture Map
   \item \textbf{Method}: Digital Height Model (DHM) derived from stereo imagery
   \item \textbf{Units}: Metres above ground
   \item \textbf{Coverage}: Urban Atlas FUAs
-  \item \textbf{License}: Copernicus data policy (Regulation (EU) No 1159/2013)
+  \item \textbf{Licence}: Copernicus data policy (Regulation (EU) No 1159/2013)
   \item \textbf{Processing}: Sampled by buffering each building footprint by 10\,m and averaging valid (non-null) overlapping pixel values; footprints with no valid pixel coverage receive NaN
 \end{itemize}
 
@@ -317,7 +320,7 @@ Table~\ref{tab:complete_landuse} provides the complete mapping from Overture Map
   \item \textbf{Resolution}: 1km $\times$ 1km grid (INSPIRE compliant)
   \item \textbf{Variables}: Population, employment, demographics, migration
   \item \textbf{Coverage}: EU27 + EFTA
-  \item \textbf{License}: European Commission reuse policy (Decision 2011/833/EU); note that Eurostat applies additional dataset-specific download terms for the census population grids (\texttt{TOT\_P\_2006}, \texttt{TOT\_P\_2011}, \texttt{TOT\_P\_2018}, \texttt{TOT\_P\_2021}) on top of the general reuse policy; users redistributing or extending derivative work should consult the GISCO metadata page above for the current population-grid terms.
+  \item \textbf{Licence}: European Commission reuse policy (Decision 2011/833/EU); note that Eurostat applies additional dataset-specific download terms for the census population grids (\texttt{TOT\_P\_2006}, \texttt{TOT\_P\_2011}, \texttt{TOT\_P\_2018}, \texttt{TOT\_P\_2021}) on top of the general reuse policy; users redistributing or extending derivative work should consult the GISCO metadata page above for the current population-grid terms.
   \item \textbf{Processing}: Interpolated to street-segment midpoints via grid cell centroids
 \end{itemize}
 
@@ -461,15 +464,15 @@ Across the \NCitiesTotal{} cities, the footprints draw on several source dataset
 
 We test for source-driven bias at two levels.
 
-\paragraph{Cross-city correlations.} For each morphometric indicator, we compute the Spearman correlation between each city's ML fraction and its median metric value across the \NCitiesTotal{} cities (Table~\ref{tab:building_metric_sensitivity}). Shared wall ratio shows the strongest negative association: cities with more ML-derived buildings have lower shared wall ratios. This cross-city correlation conflates two effects: a genuine morphological gradient (countries with higher ML fractions---Romania, Bulgaria, Greece---also have more freestanding housing stock) and a data artefact (ML-derived footprints underestimate shared walls due to polygon boundary gaps). The within-city test below isolates the artefact component. Perimeter, area, and volume are also positively associated, partly reflecting the tendency of ML segmentation to merge adjacent buildings into larger polygons and partly reflecting genuinely larger building footprints in lower-density settings. Fractal dimension and corner count show weaker but significant associations, while compactness, shape index, and orientation show no significant association with source composition.
+\paragraph{Cross-city correlations.} For each morphometric indicator, we compute the Spearman correlation between each city's ML fraction and its median metric value across the \NCitiesTotal{} cities (Table~\ref{tab:building_metric_sensitivity}). Shared wall ratio shows the strongest negative association: cities with more ML-derived buildings have lower shared wall ratios. This cross-city correlation conflates two effects: a genuine morphological gradient (countries with higher ML fractions (Romania, Bulgaria, Greece) also have more freestanding housing stock) and a data artefact (ML-derived footprints underestimate shared walls due to polygon boundary gaps). The within-city test below isolates the artefact component. Perimeter, area, and volume are also positively associated, partly reflecting the tendency of ML segmentation to merge adjacent buildings into larger polygons and partly reflecting genuinely larger building footprints in lower-density settings. Fractal dimension and corner count show weaker but significant associations, while compactness, shape index, and orientation show no significant association with source composition.
 
-\paragraph{Within-city comparisons.} To isolate the data artefact from genuine morphological differences between countries, we compare community and ML-derived buildings \emph{within the same city} using Mann-Whitney $U$ tests, restricted to cities containing both source types (Table~\ref{tab:building_metric_sensitivity}). Shared wall ratio shows a consistent within-city difference, significant in nearly all such cities: ML-derived buildings have lower shared wall ratios than community-contributed buildings in the same urban context, confirming a per-building artefact independent of cross-country morphological variation. Corner count and fractal dimension are also affected within cities, while compactness and shape index show small but widespread differences.
+\paragraph{Within-city comparisons.} To isolate the data artefact from genuine morphological differences between countries, we compare community and ML-derived buildings \emph{within the same city} using Mann--Whitney $U$ tests, restricted to cities containing both source types (Table~\ref{tab:building_metric_sensitivity}). Shared wall ratio shows a consistent within-city difference, significant in nearly all such cities: ML-derived buildings have lower shared wall ratios than community-contributed buildings in the same urban context, confirming a per-building artefact independent of cross-country morphological variation. Corner count and fractal dimension are also affected within cities, while compactness and shape index show small but widespread differences.
 
-Block-level density metrics (GSI, FSI) show no meaningful cross-city association with ML fraction, likely because ML footprints add buildings in areas where community mapping is sparse, compensating for any area inflation from polygon merging. Table~\ref{tab:building_metric_sensitivity} summarises all cross-city and within-city results.
+Block-level density metrics (GSI, FSI) show positive cross-city associations with ML fraction, FSI more strongly than GSI (Table~\ref{tab:building_metric_sensitivity}); as with the size metrics, these cross-city associations conflate a genuine morphological gradient (countries with higher ML fractions also tend towards denser building stock) with any source effect. Table~\ref{tab:building_metric_sensitivity} summarises all cross-city and within-city results.
 
 \begin{table}[!htb]
   \centering
-  \caption{Sensitivity of building morphometric indicators to data source composition. Cross-city $\rho$: Spearman correlation between city ML fraction and city median metric value, across all \NCitiesTotal{} cities. Within-city $r$: median rank-biserial correlation from Mann-Whitney $U$ tests comparing community and ML-derived buildings within each city, restricted to cities containing both source types. Significance: {*}{*}{*}\,$p < 0.001$, {*}{*}\,$p < 0.01$, {*}\,$p < 0.05$.}
+  \caption{Sensitivity of building morphometric indicators to data source composition. Cross-city $\rho$: Spearman correlation between city ML fraction and city median metric value, across all \NCitiesTotal{} cities. Within-city $r$: median rank-biserial correlation from Mann--Whitney $U$ tests comparing community and ML-derived buildings within each city, restricted to cities containing both source types. Significance: {*}{*}{*}\,$p < 0.001$, {*}{*}\,$p < 0.01$, {*}\,$p < 0.05$.}
   \label{tab:building_metric_sensitivity}
   \scriptsize
   \input{outputs/tables/table_building_metric_sensitivity}
@@ -478,6 +481,6 @@ Block-level density metrics (GSI, FSI) show no meaningful cross-city association
 \subsection{Street-frontage ratio}
 \label{sec:bldg-supp-frontage}
 
-To provide a source-robust continuity measure, we compute a bilateral street-frontage ratio for each street segment. The computation proceeds as follows: (1)~buffer the street centreline by 35\,m to define a corridor (wide enough to capture building edges that address the street across a typical European front-garden or setback depth, narrow enough to exclude buildings on the next parallel street); (2)~identify all building edges whose midpoint falls inside the corridor and whose nearest street is this one (preventing cross-street contamination); (3)~classify each edge as left or right of the centreline using the local street tangent; (4)~per side, retain only edges within 5\,m of the closest edge, filtering out rear extensions and garages while preserving the primary facade line (5\,m is chosen to span typical facade step-ins and arcades without admitting rear-yard structures); (5)~project retained edges onto the centreline, merge overlapping intervals, and compute coverage as the fraction of street length covered (3\,m trimmed from each end as a junction guard, removing the short overlap where a corner property's facade would otherwise count toward both intersecting streets); (6)~the reported score (\texttt{frontage\_max}) is the maximum of the two sides. Per-side scores (\texttt{frontage\_left}, \texttt{frontage\_right}), their mean (\texttt{frontage\_avg}), and per-side edge counts (\texttt{frontage\_edges\_left}, \texttt{frontage\_edges\_right}) are also retained.
+To provide a source-robust continuity measure, we compute a bilateral street-frontage ratio for each street segment. The computation proceeds as follows: (1)~buffer the street centreline by 35\,m to define a corridor (wide enough to capture building edges that address the street across a typical European front-garden or setback depth, narrow enough to exclude buildings on the next parallel street); (2)~identify all building edges whose midpoint falls inside the corridor and whose nearest street is this one (preventing cross-street contamination); (3)~classify each edge as left or right of the centreline using the local street tangent; (4)~per side, retain only edges within 5\,m of the closest edge, filtering out rear extensions and garages while preserving the primary facade line (5\,m is chosen to span typical facade step-ins and arcades without admitting rear-yard structures); (5)~project retained edges onto the centreline, merge overlapping intervals, and compute coverage as the fraction of street length covered (3\,m trimmed from each end as a junction guard, removing the short overlap where a corner property's facade would otherwise count towards both intersecting streets); (6)~the reported score (\texttt{frontage\_max}) is the maximum of the two sides. Per-side scores (\texttt{frontage\_left}, \texttt{frontage\_right}), their mean (\texttt{frontage\_avg}), and per-side edge counts (\texttt{frontage\_edges\_left}, \texttt{frontage\_edges\_right}) are also retained.
 
-Unlike shared wall ratio, which requires exact topological contact between adjacent polygon boundaries, frontage ratio depends only on building \emph{presence} along the street edge. Whether two adjacent terraced houses are represented as separate touching polygons (community-digitised) or as a single merged polygon (ML-derived), the frontage coverage is the same. Across the \NCitiesTotal{} cities, the association between city-level ML fraction and median frontage ratio is substantially weaker than the corresponding shared-wall-ratio association (Table~\ref{tab:building_metric_sensitivity}). Because frontage is largely immune to the polygon-merging artefact that the within-city test identifies for shared wall ratio, this weaker residual association most likely reflects a predominantly genuine morphological gradient (countries with higher ML fractions also tend toward more freestanding housing) rather than a measurement artefact.
+Unlike shared wall ratio, which requires exact topological contact between adjacent polygon boundaries, frontage ratio depends only on building \emph{presence} along the street edge. Whether two adjacent terraced houses are represented as separate touching polygons (community-digitised) or as a single merged polygon (ML-derived), the frontage coverage is the same. Across the \NCitiesTotal{} cities, the association between city-level ML fraction and median frontage ratio is substantially weaker than the corresponding shared-wall-ratio association (Table~\ref{tab:building_metric_sensitivity}). Because frontage is largely immune to the polygon-merging artefact that the within-city test identifies for shared wall ratio, this weaker residual association most likely reflects a predominantly genuine morphological gradient (countries with higher ML fractions also tend towards more freestanding housing) rather than a measurement artefact.

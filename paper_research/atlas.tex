@@ -41,7 +41,7 @@
   \end{abstract}
 
   \begin{keyword}
-    urban morphology \sep urban form \sep pedestrian accessibility \sep service access \sep green infrastructure \sep European cities \sep comparative urbanism
+    urban morphology \sep pedestrian accessibility \sep service access \sep green infrastructure \sep European cities \sep comparative urbanism
   \end{keyword}
 
 \end{frontmatter}
@@ -57,7 +57,7 @@ The classification is intended as a common language for comparative work. Becaus
 
 \subsection{Comparative urban analysis at pedestrian scale}
 
-The study of urban form has long-standing foundations in the Conzenian tradition of town-plan analysis, which examines cities through the layered evolution of street systems, plot patterns, and building fabric \citep{whitehand2001british}, and in the Muratorian tradition of building typology, which classifies urban tissue by the recurring association of building types with their plot and block contexts \citep{caniggia2001architectural, oliveira2016urban}. Large-sample comparative morphology has extended these qualitative traditions through computational measurement: satellite imagery for urban extent and growth trajectories \citep{angel2016atlas}, graph-theoretic analysis of street-network topology and orientation \citep{boeing2019urban, boeing2020multi}, quantitative taxonomy of building footprints and urban tissue \citep{fleischmann2022morphological, dibble2019origin}, and block-geometry approaches to street-pattern classification \citep{louf2014typology}. These computational lines have largely developed around distinct families of spatial features (network graphs, building footprints, land-cover patches), though recent work increasingly integrates across them \citep{moudon1997urban, araldi2019street, yap2023global}. The SOAR-EU dataset extends this integration by linking building geometry, street-network structure, land-cover blocks, point-of-interest distributions, and census demographics at street resolution for urban centres across the EU. This approach is a direct extension of \citet{simons2021thesis}, which applied the same approach (integrating street networks, land uses, and census demographics at pedestrian scale) to 931 cities and towns in Great Britain.
+The study of urban form has long-standing foundations in the Conzenian tradition of town-plan analysis, which examines cities through the layered evolution of street systems, plot patterns, and building fabric \citep{whitehand2001british}, and in the Muratorian tradition of building typology, which classifies urban tissue by the recurring association of building types with their plot and block contexts \citep{caniggia2001architectural, oliveira2016urban}. Large-sample comparative morphology has extended these qualitative traditions through computational measurement: satellite imagery for urban extent and growth trajectories \citep{angel2016atlas}, graph-theoretic analysis of street-network topology and orientation \citep{boeing2019urban, boeing2020multi}, quantitative taxonomy of building footprints and urban tissue \citep{fleischmann2022morphological, dibble2019origin}, and block-geometry approaches to street-pattern classification \citep{louf2014typology}. These computational lines have largely developed around distinct families of spatial features (network graphs, building footprints, land-cover patches); their integration has long been urged \citep{moudon1997urban} and is increasingly realised in recent work \citep{araldi2019street, yap2023global}. The SOAR-EU dataset extends this integration by linking building geometry, street-network structure, land-cover blocks, point-of-interest distributions, and census demographics at street resolution for urban centres across the EU. This approach is a direct extension of \citet{simons2021thesis}, which applied the same approach (integrating street networks, land uses, and census demographics at pedestrian scale) to 931 cities and towns in Great Britain.
 
 Whereas plan-level and satellite-based approaches typically describe cities from above, this atlas computes all metrics relative to street segments using the cityseer \citep{simons2023cityseer} package. Morphological characteristics are aggregated to each edge from surrounding buildings and blocks, and accessibility is measured as the network walking distance to the nearest point of interest, green space, or tree canopy.
 
@@ -65,11 +65,11 @@ Whereas plan-level and satellite-based approaches typically describe cities from
 
 The dataset draws on six open sources: Overture Maps for street networks, building footprints, and points of interest; the Copernicus Digital Height Model for building heights; the Copernicus Urban Atlas 2021 and Street Tree Layer for block land-cover and tree canopy; the Eurostat Census Grid 2021 for population demographics; and the Global Human Settlement Urban Centre Database (GHS-UCDB) for urban-centre boundaries \citep{florczyk2019ghs}. These were chosen for continental coverage and reproducibility: higher-precision alternatives, where they exist, typically cover individual countries or carry access restrictions. The Copernicus and Eurostat layers are additionally harmonised across nations by design, and the GHS-UCDB delineates urban areas by satellite-derived population density and built-up area rather than municipal boundaries, yielding extents that are consistent across countries.
 
-The one source whose quality varies materially across countries is Overture \citep{overture2024}. Its road networks incorporate OpenStreetMap and are largely complete across urbanised Europe \citep{barringtonleigh2017world}, but its building footprints and points of interest are more variable: in some countries footprints rely more on machine learning-derived geometries \citep{herfort2023spatio}, and points of interest are systematically undercounted relative to official business registries \citep{ballantyne2024overture}. The analyses are designed to absorb both gaps. Morphological metrics are aggregated across all buildings surrounding each street, so no single missing or modelled footprint drives a value; and service accessibility is measured as the network walking distance to the nearest facility rather than as a count, so POI undercounting shifts a measurement only when the closest facility of a category is the one omitted.
+The one source whose quality varies materially across countries is Overture \citep{overture2026}. Its road networks incorporate OpenStreetMap and are largely complete across urbanised Europe \citep{barringtonleigh2017world}, but its building footprints and points of interest (POI) are more variable: community-mapped building coverage is incomplete in parts of Europe \citep{herfort2023spatio}, so footprints in some countries rely more on geometries derived by machine learning (ML); and points of interest carry incomplete category attribution \citep{ballantyne2024overture} and are undercounted relative to official business registries \citep{simons2024soar}. The analyses are designed to absorb both gaps. Morphological metrics are aggregated across all buildings surrounding each street, so no single missing or modelled footprint drives a value; and service accessibility is measured as the network walking distance to the nearest facility rather than as a count, so POI undercounting shifts a measurement only when the closest facility of a category is the one omitted.
 
 The companion data paper \citep{simons2024soar} quantifies this residual POI risk directly. A source-substitution analysis recomputes accessibility against the French SIRENE and Dutch BAG registries across \nValidationCities{} cities, holding the street network constant so that any difference arises from the POI input alone. It identifies nearest-distance accessibility, the metric family the atlas uses throughout, as the most cross-source consistent: median F1 agreement between Overture and the reference registries reaches 80\% by \poiNearDistGood\,m for the five commercial and institutional categories used here (retail, eat \& drink, business \& services, education, health \& medical), and by \poiNearDistAccom\,m for accommodation. Because the atlas compares broad distributional ordering across morphological types, density bands, and country clusters rather than precise rankings of individual cities, this level of agreement is sufficient for the analyses that follow. The validation covers only France and the Netherlands, both among the best-covered countries in Europe because their national cadastres have been imported into OpenStreetMap. Agreement is likely to be lower where coverage is less mature, notably in parts of southern and eastern Europe, so these figures are best read as an upper bound on cross-source consistency rather than a continental average; the limitations (Section~\ref{sec:discussion}) return to this point.
 
-All data is projected to EPSG:3035 (ETRS89-LAEA Europe); of \nTotalM{} million streets, \nClassifiedM{} million (\pctClassified\%) carry complete values on all three morphological axes and receive a type assignment, with the excluded \pctExcluded\% disproportionately comprising peripheral streets with sparse building data.
+All data are projected to EPSG:3035 (ETRS89-LAEA Europe); of \nTotalM{} million streets, \nClassifiedM{} million (\pctClassified\%) carry complete values on all three morphological axes and receive a type assignment, with the excluded \pctExcluded\% comprising peripheral streets with sparse building data and streets whose surrounding blocks lack usable building-height data, without which FSI is not computable.
 
 % ==============================================================================
 \section{Plate 1 --- A Classification of Form}
@@ -83,7 +83,7 @@ All data is projected to EPSG:3035 (ETRS89-LAEA Europe); of \nTotalM{} million s
   \label{fig:plate1}
 \end{figure}
 
-The classification captures three independent dimensions (the mass of the built environment, its enclosure of the street, and the irregularity of its layout) whose combination yields eight types; Plate~1 (Figure~\ref{fig:plate1}) shows an exemplar city from each type. We take an intentionally simple approach, departing from the current trend toward data-heavy classification: data-driven clustering of high-dimensional morphological data is a well-documented challenge \citep{berghauser2019systematic}, with type boundaries sensitive to algorithm and input choices. Historical morphological traditions, by contrast, interpret urban form through hierarchies of building fabric, plot patterns, and street systems \citep{whitehand2001british, kropf2009aspects}, but these do not straightforwardly operationalise at continental scale from open data. Against this backdrop, we intentionally use a small number of building-footprint properties available across open data sources where plot or cadastral boundaries are not.
+The classification captures three independent dimensions (the mass of the built environment, its enclosure of the street, and the irregularity of its layout) whose combination yields eight types; Plate~1 (Figure~\ref{fig:plate1}) shows an exemplar city from each type. We take an intentionally simple approach, departing from the current trend towards data-heavy classification: data-driven clustering of high-dimensional morphological data yields type boundaries sensitive to algorithm and input choices \citep{berghauser2019systematic, fleischmann2022morphological}. Historical morphological traditions, by contrast, interpret urban form through hierarchies of building fabric, plot patterns, and street systems \citep{whitehand2001british, kropf2009aspects}, but these do not straightforwardly operationalise at continental scale from open data. Against this backdrop, we use a small number of building-footprint properties available across open data sources where plot or cadastral boundaries are not.
 
 Three considerations select these axes over familiar alternatives. First, each axis is a property of the built fabric itself rather than of its occupancy or of the measurement apparatus: population density describes residents rather than form and is held out as an outcome dimension (Plates~8 and~11), while connectivity and block size are properties of the street network and are held out so that the classification remains independent of the network used to measure access (Plates~5--7). Second, the axes carry distinct information: intensity summarises how much is built, continuity how the built mass addresses the street, and irregularity how the layout is ordered, and the three are close to uncorrelated across \nClassifiedM{} million streets (\ref{sec:axis-selection}). Compactness in the Spacematrix sense (ground coverage) is not added as a fourth axis, because pairing floor-area intensity with frontage recovers the configurational distinction that ground-space index provides while discriminating types more sharply (\ref{sec:axis-selection}). Third, each axis corresponds to a lever that planning regimes control directly: permitted floor area, build-to lines and street enclosure, and plan geometry. A fixed-threshold classification is coarser than a fitted one, but it has three properties that matter here: a type label means the same thing in every city; the boundaries can be inspected and adjusted, since all thresholds are parameters of the published code; and the classification cannot absorb the network and access variables it is later used to analyse. Table~\ref{tab:positioning} situates the approach among established treatments of urban tissue.
 
@@ -127,21 +127,21 @@ Three considerations select these axes over familiar alternatives. First, each a
   \end{tabular}
 \end{table}
 
-For \emph{Intensity}, we use floor space index (FSI), computed at the level of Urban Atlas land-cover blocks as the ratio of total building floor area to block land area. Each street receives a distance-weighted mean of block values from immediately surrounding blocks. FSI is the central variable in the Spacematrix framework \citep{berghauser2010spacematrix}, which establishes building density, distinct from population density, as a multi-indicator condition whose components (intensity, compactness, spaciousness) can vary independently \citep{dovey2014urban, berghauser2021density}. FSI integrates vertical extent and horizontal coverage, and discriminates between types more sharply than height or ground coverage alone (\ref{sec:axis-selection}). We adopt FSI\,=\,\threshFSI{} as the threshold separating Intense from Light types, corresponding to the transition between low-rise suburban fabric and contiguous urban development in the Spacematrix typology.
+For \emph{Intensity}, we use floor space index (FSI), computed at the level of Urban Atlas land-cover blocks as the ratio of total building floor area to block land area. Each street receives a distance-weighted mean of block values from immediately surrounding blocks. FSI is the central variable in the Spacematrix framework \citep{berghauser2010spacematrix}, which establishes building density, distinct from population density, as a multi-indicator condition whose components (intensity, compactness, spaciousness) can vary independently \citep{dovey2014urban, godoyshimizu2021density}. FSI integrates vertical extent and horizontal coverage, and discriminates between types more sharply than height or ground coverage alone (\ref{sec:axis-selection}). We adopt FSI\,=\,\threshFSI{} as the threshold separating Intense from Light types, broadly corresponding to the transition between low-rise suburban fabric and contiguous urban development in the Spacematrix typology.
 
 For \emph{Continuity}, we measure street-frontage ratio. FSI alone is degenerate: a ten-storey tower covering 10\% of a block and a two-storey terrace covering 50\% both produce the same ratio. Spacematrix resolves this by pairing FSI with ground-space index (GSI); because this atlas operates at the street, we instead pair FSI with facade continuity: whether buildings form a continuous wall addressing the street or stand apart \citep{hamaina2012towards, vanderhaegen2017mapping}. Frontage ratio scores the fraction of each street's more-covered side that is fronted by building facades within a maximum 35\,m corridor; it is preferred over shared wall ratio because it is more robust to the ML-derived footprints predominant in parts of southern and eastern Europe (\ref{sec:source-robustness}). We set the threshold at \threshCont{}, three-quarters of the more-covered side fronted, which sits well into the upper tail of the distribution; \ref{sec:continuity-calibration} provides background on the measure and calibrates the threshold.
 
-For \emph{Irregularity}, we use median absolute deviation (MAD) of building orientations: the degree to which buildings within the vicinity share a common alignment. Orientation regularity reflects both deliberate geometric order and topographic constraint. Orientation entropy of street networks discriminates planned from organic cities worldwide \citep{boeing2019urban}, and orientation regularity separates historical periods of development \citep{dibble2019origin}; we measure dispersion of building orientations rather than network entropy, both because it captures finer-grained layout irregularity and because it keeps the classification independent of the network structure used to compute accessibility. The axis discriminates between planned cities (post-war Dutch grids, socialist-era Polish estates) and two distinct sources of irregularity: organic medieval growth (Liège, Brussels) and topographically constrained development (Oslo, Bergen). We set the threshold at \threshMADdeg\textdegree.
+For \emph{Irregularity}, we use median absolute deviation (MAD) of building orientations: the degree to which buildings within the vicinity share a common alignment. Orientation regularity reflects both deliberate geometric order and topographic constraint. Orientation entropy of street networks discriminates planned from organic cities worldwide \citep{boeing2019urban}, and morphometric profiles separate historical periods of development \citep{dibble2019origin}; we measure dispersion of building orientations rather than network entropy, both because it captures finer-grained layout irregularity and because it keeps the classification independent of the network structure used to compute accessibility. The axis discriminates between planned cities (post-war Dutch grids, socialist-era Polish estates) and two distinct sources of irregularity: organic medieval growth (Liège, Brussels) and topographically constrained development (Oslo, Bergen). We set the threshold at \threshMADdeg\textdegree.
 
-The three axes carry largely independent information; all eight types are populated, and type membership also discriminates fabric variables it was not built from: ground-space index, building height, and building count per walking neighbourhood (\ref{sec:axis-selection}).
+The three axes carry largely independent information; all eight types are populated, and type membership also discriminates fabric variables it was not built from: ground-space index and building height (\ref{sec:axis-selection}).
 
-Intensity and Irregularity are aggregated over a \kernelDist\,m distance-weighted neighbourhood around each street; Continuity is measured directly from the maximum 35\,m street-side corridor. \pctMissingFSIfourHundred\% of streets have no buildings within the Intensity kernel and remain unclassified. Types are named by position on each axis in Intensity--Continuity--Irregularity order: HHH denotes Intense--Attached--Irregular; LLL denotes Light--Freestanding--Rectilinear (Table~\ref{tab:types}). The thresholds are author choices intended to mark substantively meaningful breaks rather than statistically optimised splits. Table~\ref{tab:sensitivity} reports how the share of streets falling into each type responds to $\pm$20\% variation in each threshold, holding the other two fixed: no type's share moves by more than a few percentage points (maximum drift \sensMaxDriftFSILo\% / \sensMaxDriftFSIHi\% on FSI, \sensMaxDriftCONTLo\% / \sensMaxDriftCONTHi\% on Continuity, \sensMaxDriftMADLo\% / \sensMaxDriftMADHi\% on MAD) and the rank order of types is preserved throughout, so the classification is not finely tuned to the specific thresholds adopted.
+Intensity and Irregularity are aggregated over a \kernelDist\,m distance-weighted neighbourhood around each street; Continuity is measured directly from the maximum 35\,m street-side corridor. \pctNaNFSIfourHundred\% of streets lack a computable FSI within the Intensity kernel and remain unclassified. Types are named by position on each axis in Intensity--Continuity--Irregularity order: HHH denotes Intense--Attached--Irregular; LLL denotes Light--Freestanding--Rectilinear (Table~\ref{tab:types}). The thresholds are author choices intended to mark substantively meaningful breaks rather than statistically optimised splits. Table~\ref{tab:sensitivity} reports how the share of streets falling into each type responds to $\pm$20\% variation in each threshold, holding the other two fixed: the largest share drift is \sensMaxDriftFSILo\% / \sensMaxDriftFSIHi\% under the FSI perturbations, \sensMaxDriftCONTLo\% / \sensMaxDriftCONTHi\% under Continuity, and \sensMaxDriftMADLo\% / \sensMaxDriftMADHi\% under MAD, so the classification is not finely tuned to the specific thresholds adopted.
 
 \begin{table}[ht]
   \centering
   \caption{Summary of the eight morphological types.
     Street counts and percentages are based on \nClassifiedM{} million classified streets.
-  FSI, FR (frontage ratio), and MAD are cross-type medians.}
+  FSI, FR (frontage ratio), and MAD are per-type medians.}
   \label{tab:types}
   \small
   \begin{tabular}{llrrrrr}
@@ -162,7 +162,7 @@ Intensity and Irregularity are aggregated over a \kernelDist\,m distance-weighte
 
 \begin{table}[ht]
   \centering
-  \caption{Octant share (\%) under $\pm$20\% threshold perturbation, by axis. Baseline thresholds: FSI = \threshFSI, Continuity = \threshCont, MAD = \threshMADdeg\textdegree.}
+  \caption{Type share (\%) under $\pm$20\% threshold perturbation, by axis. Baseline thresholds: FSI = \threshFSI, Continuity = \threshCont, MAD = \threshMADdeg\textdegree.}
   \label{tab:sensitivity}
   \small
   \input{outputs/atlas/sensitivity.tex}
@@ -176,7 +176,7 @@ Intensity and Irregularity are aggregated over a \kernelDist\,m distance-weighte
 \begin{figure}[p]
   \centering
   \includegraphics[width=\textwidth]{outputs/atlas/plate2_ripples.png}
-  \caption{Continental ring map: three morphological axes across \nCities{} cities. Each city is drawn as three concentric rings, one per axis (colour-coded). For each city, rings are ordered by value (the axis with the lowest score sits innermost, the highest outermost), and opacity scales with value, so low-value axes collapse toward the centre and fade while high-value axes push outward and appear solid. Cluster size scales with city area.}
+  \caption{Continental ring map: three morphological axes across \nCities{} cities. Each city is drawn as three concentric rings, one per axis (colour-coded). For each city, rings are ordered by value (the axis with the lowest score sits innermost, the highest outermost), and opacity scales with value, so low-value axes collapse towards the centre and fade while high-value axes push outward and appear solid. Cluster size scales with city area.}
   \label{fig:plate2}
 \end{figure}
 
@@ -187,11 +187,11 @@ Intensity and Irregularity are aggregated over a \kernelDist\,m distance-weighte
   \label{fig:plate3}
 \end{figure}
 
-Plate~2 (Figure~\ref{fig:plate2}) maps the three axes across Europe at city level using concentric rings; Plate~3 (Figure~\ref{fig:plate3}) disaggregates the same data into country-grouped line profiles. Three broad bands emerge. A \emph{Southern European} band is characterised by high Intensity: Spain has the highest country-median FSI in the sample (\fsiCtryES; Barcelona \fsiBarcelona, Madrid \fsiMadrid), and the band continues through Portugal, Italy, and Austria to Greece, where Athens reaches \fsiAthens. These high floor-area ratios share a morphological outcome (four- to six-storey structures on dense blocks) but arise from distinct national mechanisms. In Spain, nineteenth-century \emph{ensanche} grids permitted deep-lot perimeter blocks whose interior courtyards were progressively filled as twentieth-century legislation raised allowable floor-area ratios \citep{busquets2005barcelona}. In Greece, the \emph{antiparochi} system drove parcel-by-parcel vertical densification across Athens and Thessaloniki from the 1950s, producing near-total ground coverage through a financial mechanism rather than a planning intention \citep{maloutas2003promoting}. City-level Continuity is low across the band, though the median understates within-city variation: \pctContBarcelona\% of Barcelona's streets and \pctContAthens\% of Athens's exceed the Attached threshold, concentrated in dense historic cores.
+Plate~2 (Figure~\ref{fig:plate2}) maps the three axes across Europe at city level using concentric rings; Plate~3 (Figure~\ref{fig:plate3}) disaggregates the same data into country-grouped line profiles. Three broad bands emerge. A \emph{Southern European} band is characterised by high Intensity: Spain has the highest country-median FSI in the sample (\fsiCtryES; Barcelona \fsiBarcelona, Madrid \fsiMadrid), and the band continues through Portugal, Italy, and Austria to Greece, where Athens reaches \fsiAthens. These high floor-area ratios share a morphological outcome (four- to six-storey structures on dense blocks) but arise from distinct national mechanisms. In Spain, nineteenth-century \emph{ensanche} grids permitted deep-lot perimeter blocks whose interior courtyards were progressively filled as twentieth-century legislation raised allowable floor-area ratios \citep{busquets2005barcelona}. In Greece, the \emph{antiparochi} system drove parcel-by-parcel vertical densification across Athens from the 1950s, producing near-total ground coverage through a financial mechanism rather than a planning intention \citep{maloutas2003promoting}. City-level Continuity varies across the band (Spain's country median is \contCtryES{} against Greece's \contCtryEL{}, the highest in the sample), and city medians understate within-city variation: \pctContBarcelona\% of Barcelona's streets and \pctContAthens\% of Athens's exceed the Attached threshold, concentrated in dense historic cores.
 
-A second, \emph{Eastern European} band shows comparable Intensity through a different building stock: Bulgaria, Slovakia, and the Baltic states reach comparable building mass through freestanding apartment blocks and housing estates, fabric that withdraws from the street despite comparable floor-area ratios. Intensity and street enclosure are largely independent at continental scale. The third band is a \emph{Western European} Continuity signature: the Netherlands and Belgium share elevated frontage ratios (NL: $\sim$\contNLmed; BE: $\sim$\contBEmed), consistent with a common Low Countries tradition of terraced and semi-detached dwellings with party walls; within Amsterdam, \pctContAmsterdam\% of streets exceed the Attached threshold, within Brussels \pctContBrussels\%. France and Ireland also show elevated Continuity.
+A second, \emph{Eastern European} band shows comparable Intensity through a different building stock: Bulgaria, Slovakia, and the Baltic states reach comparable building mass through freestanding apartment blocks and housing estates, fabric that withdraws from the street despite comparable floor-area ratios. Intensity and street enclosure are largely independent at continental scale. The third band is a \emph{Western European} Continuity signature: the Netherlands and Belgium share elevated frontage ratios (NL: $\sim$\contNLmed; BE: $\sim$\contBEmed), consistent with a common Low Countries tradition of terraced and semi-detached dwellings with party walls; within Amsterdam, \pctContAmsterdam\% of streets exceed the Attached threshold, within Brussels \pctContBrussels\%.
 
-The resemblance between the Netherlands and Belgium ends at Continuity. Dutch cities are among the most regular in the sample (median MAD \madNLmed\textdegree), reflecting a strongly plan-led tradition of detailed, binding local land-use plans \citep{faludi1994rule}, reinforced by reclaimed polder land whose rectilinear drainage geometry is echoed in subsequent street layouts. Belgian cities combine near-identical attachment with considerably higher irregularity (median MAD \madBEmed\textdegree), the product of a permissive building-permit regime and individual-plot self-construction along rural roads, a pattern known as \emph{lintbebouwing} \citep{dedecker2008facets}. Within countries, finer gradients reflect topography, wartime disruption, and housing traditions: Norway, Portugal, Switzerland, and parts of Croatia combine high Irregularity with lower Intensity, freestanding buildings on layouts dictated by slopes and valleys; Italy's Intensity climbs from north to south but its morphological character remains broadly consistent across the peninsula; Germany's Continuity ranges widely, consistent with divergent post-war reconstruction strategies \citep{diefendorf1993wake}.
+The resemblance between the Netherlands and Belgium ends at Continuity. Dutch cities are among the most regular in the sample (median MAD \madNLmed\textdegree), reflecting a strongly plan-led tradition of detailed, binding local land-use plans \citep{faludi1994rule}, reinforced by reclaimed polder land whose rectilinear drainage geometry is echoed in subsequent street layouts. Belgian cities combine near-identical attachment with considerably higher irregularity (median MAD \madBEmed\textdegree), the product of a permissive building-permit regime and individual-plot self-construction along rural roads, a pattern known as \emph{lintbebouwing} \citep{dedecker2008facets}. Within countries, finer gradients reflect topography, wartime disruption, and housing traditions: Norway combines high Irregularity with low Intensity (freestanding buildings on layouts dictated by slopes and valleys), while Portugal and Switzerland pair similar topographically driven Irregularity with greater building mass; Italy's Intensity climbs from north to south but its morphological character remains broadly consistent across the peninsula; Germany's Continuity ranges widely, consistent with divergent post-war reconstruction strategies \citep{diefendorf1993wake}.
 
 % ==============================================================================
 \section{Plate 4 --- Building Form and Street Enclosure}
@@ -209,9 +209,9 @@ Plate~4 (Figure~\ref{fig:plate4}) compares building and block indicators (GSI, F
 
 The Intense types contrast two strategies for accommodating building mass. Intense--Attached (HHH, HHL) are the continuous perimeter-block tissues characteristic of the pre-modern and nineteenth-century European city \citep{panerai2004urban}: high floor area on small blocks, with articulated building plans (bays, setbacks, light wells), as in Barcelona's \emph{ensanche}, Parisian \emph{arrondissements}, and central Amsterdam. Intense--Freestanding (HLH, HLL) reach comparable intensity through a different strategy: fewer, larger buildings with simpler plans set in open space (open-space ratio \octHLHosr--\octHLLosr{} against \octHHHosr{} in HHH). This form is associated with modernist housing estates (slab blocks and point towers in open space) and with post-war reconstruction and socialist-era planned development \citep{stanilov2007post}. The divide broadly reflects the historical shift from pre-modern fabric to mid-twentieth-century development, where the street's role as connective tissue was de-emphasised.
 
-The Light types divide along the same Continuity axis but at lower mass. LHH and LHL (Light--Attached) encompass the suburban terraced house, semi-detached villa, and low-rise row dwelling found across the Netherlands, Belgium, and many German cities: many small buildings forming near-continuous frontage at modest height. LLH and LLL are Light--Freestanding: detached houses on individual plots, the predominant fabric of peripheral and suburban Europe. LLL alone accounts for \octLLLpct\% of all classified streets, and the four Light types together for more than four-fifths. The network thins with mass: an HHH street reaches about twice as many other streets within \kernelDist\,m as an LLH one.
+The Light types divide along the same Continuity axis but at lower mass. LHH and LHL (Light--Attached) encompass the suburban terraced house, semi-detached villa, and low-rise row dwelling found across the Netherlands, Belgium, and many German cities: many small buildings forming near-continuous frontage at modest height. LLH and LLL are Light--Freestanding: detached houses on individual plots, the predominant fabric of peripheral and suburban Europe. LLL alone accounts for \octLLLpct\% of all classified streets, and the four Light types together for \pctLightTypes\%. The network thins with mass: an HHH street reaches nearly twice as many other streets within \kernelDist\,m as an LLH one.
 
-Two landuse-mix measures characterise commercial categories near each street: Hill $q_0$ (richness) counts distinct point-of-interest categories within \kernelDist\,m, and Hill $q_1$ (Shannon diversity) weights by category balance. Both are highest in Intense--Attached fabric, which combines building mass with continuous ground-floor frontage, and lowest in Light--Freestanding. Types with only one of the two conditions fall between: Intense--Freestanding estates supply mass without continuous frontage, and Light--Attached terraces frontage without mass.
+Two landuse-mix measures characterise commercial categories near each street: Hill $q_0$ (richness) counts distinct point-of-interest categories within \kernelDist\,m, and Hill $q_1$ (Shannon diversity) weights by category balance. Both are highest in Intense--Attached fabric, which combines building mass with continuous ground-floor frontage, and lowest in Light--Freestanding. Types with only one of the two conditions fall between: Intense--Freestanding estates supply mass without continuous frontage, while Light--Attached terraces supply frontage without mass.
 
 % ==============================================================================
 \section{Plates 5, 6 \& 7 --- Service Access from the Street}
@@ -228,7 +228,7 @@ Two landuse-mix measures characterise commercial categories near each street: Hi
 
 These three plates examine three dimensions of service access from each street: the median walking distance to the nearest facility in each category (Plate~5, Figure~\ref{fig:plate5}); the fraction of streets with no facility within walking distance (Plate~6, Figure~\ref{fig:plate6}); and the within-type spread of the first measure (Plate~7, Figure~\ref{fig:plate7}). All three vary systematically across the eight morphological types, and the gradient runs in opposite directions for commercial services and green space.
 
-The continental ranking of median distances places trees closest, followed by business \& services, green space, retail, transport, eat \& drink, health, and education; the discretionary categories (arts, accommodation, religious) are farthest of all. The type gradient is steepest for retail and eat \& drink, the categories most dependent on foot traffic and ground-floor premises. From HHH to LLL, retail grows from \octHHHretail\,m to \octLLLretail\,m (a \retailFoldHHHtoLLL-fold difference) and eat \& drink from \svcEatdrinkHHH\,m to \svcEatdrinkLLL\,m (a \eatDrinkFoldHHHtoLLL-fold gap). Because LLL is the most common type, the longer distance applies to more streets than the shorter one.
+The continental ranking of median distances places trees closest, followed by business \& services, green space, retail, transport, eat \& drink, health, and education; the discretionary categories (attractions, arts, religious) are farthest of all. The type gradient is steepest for retail and eat \& drink, the categories most dependent on foot traffic and ground-floor premises. From HHH to LLL, retail grows from \octHHHretail\,m to \octLLLretail\,m (a \retailFoldHHHtoLLL-fold difference) and eat \& drink from \svcEatdrinkHHH\,m to \svcEatdrinkLLL\,m (a \eatDrinkFoldHHHtoLLL-fold gap). Because LLL is the most common type, the longer distance applies to more streets than the shorter one.
 
 \begin{figure}[htp]
 
@@ -238,7 +238,7 @@ The continental ranking of median distances places trees closest, followed by bu
   \label{fig:plate6}
 \end{figure}
 
-Within \serviceCatchment\,m, roughly five minutes at average walking speed, commercial deserts show that the Continuity axis carries an effect independent of Intensity. In HHH, \desertRetailHHH\% of streets lack retail; in the otherwise similar but Freestanding HLH, the figure is already \desertRetailHLH\%. At Light Intensity the split widens: LHH has \desertRetailLHH\% retail deserts versus \desertRetailLLH\% in LLH, with facade continuity roughly halving the desert fraction at constant Intensity. The same gradient holds for eat \& drink (\desertEatDrinkHHH\% to \desertEatDrinkLLH\%), health \& medical (\desertHealthHHH\% to \desertHealthLLH\%), and education (\desertEducationHHH\% to \desertEducationLLH\%). Within-type spreads (Plate~7) amplify the same gradient: retail IQR roughly triples from \iqrRetailHHH\,m in HHH to \iqrRetailLLH\,m in LLH, with the types farthest from services also the least consistent.
+Within \serviceCatchment\,m, roughly five minutes at average walking speed, commercial deserts show that the Continuity axis carries an effect independent of Intensity. In HHH, \desertRetailHHH\% of streets lack retail; in the otherwise similar but Freestanding HLH, the figure is already \desertRetailHLH\%. At Light Intensity the split widens: LHH has \desertRetailLHH\% retail deserts versus \desertRetailLLH\% in LLH, with facade continuity roughly halving the desert fraction at constant Intensity. The same gradient holds for eat \& drink (\desertEatDrinkHHH\% to \desertEatDrinkLLH\%), health \& medical (\desertHealthHHH\% to \desertHealthLLH\%), and education (\desertEducationHHH\% to \desertEducationLLH\%). Within-type spreads (Plate~7) amplify the same gradient: the retail interquartile range (IQR) roughly triples from \iqrRetailHHH\,m in HHH to \iqrRetailLLH\,m in LLH, with the types farthest from services also the least consistent.
 
 \begin{figure}[htp]
 
@@ -248,9 +248,9 @@ Within \serviceCatchment\,m, roughly five minutes at average walking speed, comm
   \label{fig:plate7}
 \end{figure}
 
-Green space reverses the gradient on every dimension. Intense types are farther from green space (\svcGreenHHH\,m in HHH versus \svcGreenLLH\,m in LLH, roughly double), have higher green-space desert fractions (\desertGreenHHH--\desertGreenHHL\% in HHH--HHL versus \desertGreenLLH--\desertGreenLLL\% in LLH--LLL), and show wider within-type spreads. This inversion spans a substantially smaller range than the commercial gradient, however: the green-space difference between Intense and Light fabric is approximately twofold, against the \retailFoldHHHtoLLL-fold retail difference from HHH to LLL. Intense--Freestanding types illustrate the distinction: they carry moderate OSR (\octHLHosr--\octHLLosr) yet still show elevated green-space desert fractions (\desertGreenHLH--\desertGreenHLL\%), because block-level open ground is not necessarily designated green space reachable by the walking network. This case carries a broader implication for the assumed trade-off between compactness and green access. If reachable green space followed residual open ground, the Intense--Freestanding estates, which carry the most open space among the Intense types, would be the best-served Intense fabric, yet their desert fractions are among the highest. Reachable green space behaves as a provision decision rather than a by-product of low building coverage, which is consistent with the weakening of the compactness--green trade-off at the city level (Plate~12): where planning allocates green space and connects it to the walking network, compact fabric reaches it. Tree canopy is the one feature distributed evenly: \desertTreesLHH--\desertTreesHLL\% of streets lack a tree-canopy polygon within \serviceCatchment\,m regardless of type. Tree exposure here refers to proximity to tree-canopy polygons from the Copernicus Street Tree Layer, not to individual street trees, which are not mapped as discrete points in this dataset.
+Green space reverses the gradient on every dimension. Intense types are farther from green space (\svcGreenHHH\,m in HHH versus \svcGreenLLH\,m in LLH, roughly double), have higher green-space desert fractions (\desertGreenHHH\% in both HHH and HHL versus \desertGreenLLH--\desertGreenLLL\% in LLH--LLL), and show wider within-type spreads. This inversion spans a substantially smaller range than the commercial gradient, however: the green-space difference between Intense and Light fabric is approximately twofold, against the \retailFoldHHHtoLLL-fold retail difference from HHH to LLL. Intense--Freestanding types illustrate the distinction: they carry moderate OSR (\octHLHosr--\octHLLosr) and the most open ground among the Intense types, yet their green-space desert fraction (\desertGreenHLH\% in both HLH and HLL) sits only modestly below HHH--HHL and above every Light type, because block-level open ground is not necessarily designated green space reachable by the walking network. This case carries a broader implication for the assumed trade-off between compactness and green access. If reachable green space followed residual open ground, these estates would approach the Light types' figures; they do not. Reachable green space behaves as a provision decision rather than a by-product of low building coverage, which is consistent with the weakening of the compactness--green trade-off at the city level (Plate~12): where planning allocates green space and connects it to the walking network, compact fabric reaches it. Tree canopy is the one feature distributed evenly: \desertTreesLHH--\desertTreesHLL\% of streets lack a tree-canopy polygon within \serviceCatchment\,m regardless of type. Tree exposure here refers to proximity to tree-canopy polygons from the Copernicus Street Tree Layer, not to individual street trees, which are not mapped as discrete points in this dataset.
 
-Discretionary services depend on city-centre catchments and visitor footfall: even in HHH, \desertAccommodationHHH\% of streets lack accommodation and \desertReligiousHHH\% lack a religious facility within \serviceCatchment\,m. The overall desert pattern is sharply asymmetric. In HHH, desert fractions are single digits for all but the most discretionary categories. In LLL, deserts exceed 40\% for eat \& drink, health, and education, and reach 70\% or more for accommodation, arts, and religious facilities. Because the four Light types together account for \pctLightTypes\% of classified streets, the longer walks and higher absence rates apply to most of the European street network.
+Discretionary services depend on city-centre catchments and visitor footfall: even in HHH, \desertArtsHHH\% of streets lack an arts facility and \desertReligiousHHH\% lack a religious facility within \serviceCatchment\,m. The overall desert pattern is sharply asymmetric. In HHH, desert fractions are single digits for all but green space and the most discretionary categories. In LLL, deserts exceed 40\% for eat \& drink, health, and education, and reach 70\% or more for arts and religious facilities. Because the four Light types together account for \pctLightTypes\% of classified streets, the longer walks and higher absence rates apply to most of the European street network.
 
 % ==============================================================================
 \section{Plate 8 --- Demographics by Morphological Type}
@@ -265,9 +265,9 @@ Discretionary services depend on city-centre catchments and visitor footfall: ev
   \label{fig:plate8}
 \end{figure}
 
-Plate~8 (Figure~\ref{fig:plate8}) cross-tabulates five demographic dimensions from the Eurostat Census Grid against the eight types. The census data is interpolated to streets from 1\,km$^2$ grid cells and describes neighbourhood-scale composition rather than dwelling-level occupancy.
+Plate~8 (Figure~\ref{fig:plate8}) cross-tabulates five demographic dimensions from the Eurostat Census Grid against the eight types. The census data are interpolated to streets from 1\,km$^2$ grid cells and describe neighbourhood-scale composition rather than dwelling-level occupancy.
 
-Population density varies more than threefold across types and tracks built intensity: every Intense type exceeds \num{\popDensIntenseMin}/km$^2$ and every Light type falls below \num{\popDensLightMax}, with no overlap between the two groups. Light types host more children (\youthLight\% under 15 versus \youthIntense\% in Intense types) and a correspondingly smaller working-age share, which peaks in the Intense--Attached types; the elderly share, by contrast, is relatively flat across types (\elderlyMin--\elderlyMax\%).
+Population density varies more than threefold across types and tracks built intensity: every Intense type has a median of at least \num{\popDensIntenseMin}/km$^2$ and every Light type at most \num{\popDensLightMax}, with no overlap between the two groups. Light types host more children (\youthLight\% under 15 versus \youthIntense\% in Intense types) and a correspondingly smaller working-age share, which peaks in the Intense--Attached types; the elderly share, by contrast, is relatively flat across types (\elderlyMin--\elderlyMax\%).
 These higher child shares coincide with the longest service distances and highest absence rates (Plates~5--6). At least three mechanisms could produce this juxtaposition: family-sized and affordable dwellings concentrate in Light fabric; households sort into that fabric at the child-rearing stage of life; and service providers locate by purchasing density rather than by child density. Adjudicating between them is beyond the scope of this atlas, but the dataset supports first tests of each, and the discussion (Section~\ref{sec:discussion}) outlines how.
 
 % ==============================================================================
@@ -301,10 +301,10 @@ The scanlines establish continental gradients but cannot explain them: the Nordi
 The broadest contrast pairs five Nordic cities (Oslo, Bergen, Helsinki, Stockholm, Copenhagen) with five Mediterranean cities (Barcelona, Athens, Madrid, Naples, Thessaloniki). Building intensity, continuity, height, and irregularity all diverge together. Commercial service distances are shorter in the Mediterranean group (retail \compMedRetail\,m versus \compNordicRetail\,m), while tree-canopy distances run the opposite way.
 
 \paragraph{Netherlands vs Belgium}
-Amsterdam, Utrecht, and Rotterdam share a terraced row-house tradition with Brussels, Ghent, and Antwerp, giving both groups similar continuity. They diverge on irregularity and street-network density, yet retail distances remain similar (\compNLRetail\,m versus \compBERetail\,m).
+Amsterdam, Utrecht, and Rotterdam share a terraced row-house tradition with Brussels, Ghent, and Antwerp, giving both groups similar continuity. They diverge on irregularity and street-network density, yet retail distances remain broadly comparable (\compNLRetail\,m versus \compBERetail\,m).
 
 \paragraph{Low Countries vs Baltic}
-The Low Countries (Netherlands and Belgium) and the Baltic states (Estonia, Latvia, Lithuania) have comparable street-network densities but diverge on continuity and intensity, the Baltic states reaching higher FSI through freestanding blocks. Commercial distances are nonetheless similar (retail \compLCRetail\,m versus \compBalticRetail\,m), while green-space distances are shorter in the Low Countries (\compLCGreen\,m versus \compBalticGreen\,m).
+The Low Countries (Netherlands and Belgium) and the Baltic states (Estonia, Latvia, Lithuania) have comparable street-network densities but diverge on continuity and intensity, the Baltic states reaching higher FSI through freestanding blocks. Commercial and green-space distances are nonetheless similar (retail \compLCRetail\,m versus \compBalticRetail\,m; green \compLCGreen\,m versus \compBalticGreen\,m).
 
 \paragraph{Poland vs Romania}
 Both share a post-socialist inheritance but diverged on planning approach in the latter half of the twentieth century \citep{stanilov2007post, tsenkova2006urban}. Polish cities show higher street-network density while Romania's frontage ratio is higher, yet commercial distances are again similar (\compPLRetail\,m versus \compRORetail\,m) and green-space distances shorter in Poland (\compPLGreen\,m versus \compROGreen\,m).
@@ -326,7 +326,7 @@ Across the four comparisons, differences in Continuity and Intensity tend to acc
 
 These two plates relate access to density and to form. Plate~11 bins all classified streets into population-density quintiles and compares the eight morphological types within each band; Plate~12 maps street-level access across the intensity--continuity form space. Within-city matched-pair comparisons are provided in the analytical supplement (\ref{sec:analytical-supplement}).
 
-Within each density quintile (Figure~\ref{fig:plate11}) the morphological types remain distinct, and the spread is widest in the sparsest band: at Q1 (median $\sim$\num{\dqMedianOne}/km$^2$) the retail gap between the most and least accessible types is \dqRetailQOnegap\,m, with education wider still at \dqEducationQOnegap\,m, narrowing to \dqRetailQThreegap\,m of retail at Q3 (\dqRetailQThreegapPct\% of the continental median) and \dqRetailQFivegap\,m at Q5. Green space shows the reverse, its type gap largest at Q1 (\dqGreenQOnegap\,m) and converging at higher densities (\dqGreenQTwogap--\dqGreenQFivegap\,m from Q2 onward), so the inversion of Plates~5--7 is most pronounced in sparse fabric. Because the quintiles pool streets across cities and countries, these differences reflect both morphological variation and city-level factors (POI coverage, planning context, economic structure) that co-vary with type.
+Within each density quintile (Figure~\ref{fig:plate11}) the morphological types remain distinct, and the spread is widest in the sparsest band: at Q1 (median $\sim$\num{\dqMedianOne}/km$^2$) the retail gap between the most and least accessible types is \dqRetailQOnegap\,m, with education wider still at \dqEducationQOnegap\,m, narrowing to \dqRetailQThreegap\,m of retail at Q3 (\dqRetailQThreegapPct\% of the continental median) and \dqRetailQFivegap\,m at Q5. Green space shows the reverse, its type gap largest at Q1 (\dqGreenQOnegap\,m) and smaller in every later band, so the inversion of Plates~5--7 is most pronounced in sparse fabric. Because the quintiles pool streets across cities and countries, these differences reflect both morphological variation and city-level factors (POI coverage, planning context, economic structure) that co-vary with type.
 
 \begin{figure}[htp]
   \centering
@@ -337,7 +337,7 @@ Within each density quintile (Figure~\ref{fig:plate11}) the morphological types 
 
 Plate~12 (Figure~\ref{fig:plate12}) maps access onto the two morphological axes, intensity (FSI) and continuity (frontage ratio), shading each cell by the median walking distance of its streets for commercial services (left, a composite of retail, health \& medical, education, eat \& drink, and business \& services) and green space (right). The two surfaces run in opposite directions: commercial distance falls along the intensity axis in a broadly vertical gradient, continuity a secondary influence, whereas green-space distance inverts and runs diagonally, shortest in the Light--Freestanding corner (low intensity and low continuity) and longest in dense, attached fabric, where continuity contributes more than it does for commercial access. The form space thus shows directly the green inversion of Plates~5--7 and the differing roles of intensity and continuity reported in the appendix (Table~\ref{tab:marginal}).
 
-Because city medians compress the street-level range, the city dots cluster toward the lower-intensity centre rather than the extremes, and the form--access gradients soften at the city scale. Some compact cities nonetheless achieve short green-space distances, for example in Poland, Spain, and Italy, so compactness and green-space access are not inherently in tension (cf.\ \ref{sec:analytical-supplement}).
+Because city medians compress the street-level range, the city dots cluster towards the lower-intensity centre rather than the extremes, and the form--access gradients soften at the city scale. Some compact cities nonetheless achieve short green-space distances, for example in Poland, Spain, and Italy, so compactness and green-space access are not inherently in tension (cf.\ \ref{sec:analytical-supplement}).
 
 The two gradients differ in direction, and the difference has practical consequences. Commercial access improves along the intensity axis, the dimension that regulation controls through permitted floor area; green access depends more on continuity, and because the green gradient spans a smaller range, targeted provision can offset what intensification would otherwise cost. The form space also serves as a diagnostic frame: any street or city can be located in it from two measurements, and its expected commercial and green distances read off from the surrounding cells, giving planners a direct way to position a district against \nCities{}-city norms.
 
@@ -348,15 +348,15 @@ The two gradients differ in direction, and the difference has practical conseque
 
 \subsection{Form and access}
 
-One of the more consistent patterns in the atlas is that morphological type is associated with pedestrian access to commercial services even when streets are compared within the same city and population-density band. Intense--Attached types show the shortest walking distances and the widest mix of categories; Light--Freestanding types show the longest distances and the highest rates of service absence. The gap between types at the middle population-density quintile amounts to \dqRetailQThreegapPct\% of the continental median and narrows only in the densest band. A within-city decomposition (\ref{sec:analytical-supplement}) finds that the three morphological axes account for \rSqMorphMin--\rSqMorphMax\% of within-city variance in commercial service distances, while adding population density at census resolution produces no measurable gain, though this may partly reflect the resolution mismatch between 1\,km$^2$ census grids and the \kernelDist\,m morphological kernel. The mismatch bounds the claim. The census grid cannot resolve density variation between neighbouring streets, but it does fix the neighbourhood-scale density at which the matched comparisons are made, so the defensible reading is that built form discriminates commercial access at any given neighbourhood-scale density observable in pan-European data. A finer population grid could reveal street-scale density effects within neighbourhoods; it could not remove the form gradient documented across them. FSI is itself a fine-grained measure of built (as opposed to residential) density, so the comparison separates built form from residential crowding; it does not claim that density in general is irrelevant. These observations are consistent with the Spacematrix argument that building density is a multi-indicator condition whose components carry independent information \citep{berghauser2010spacematrix, berghauser2021density}.
+One of the more consistent patterns in the atlas is that morphological type is associated with pedestrian access to commercial services even when streets are compared within the same city and population-density band. Intense--Attached types show the shortest walking distances and the widest mix of categories; Light--Freestanding types show the longest distances and the highest rates of service absence. The gap between types at the middle population-density quintile amounts to \dqRetailQThreegapPct\% of the continental median and narrows steadily towards the densest band. A within-city decomposition (\ref{sec:analytical-supplement}) finds that the three morphological axes account for \rSqMorphMin--\rSqMorphMax\% of within-city variance in commercial service distances, while adding population density at census resolution adds little, though this may partly reflect the resolution mismatch between 1\,km$^2$ census grids and the \kernelDist\,m morphological kernel. The mismatch bounds the claim. The census grid cannot resolve density variation between neighbouring streets, but it does fix the neighbourhood-scale density at which the matched comparisons are made, so the defensible reading is that built form discriminates commercial access at any given neighbourhood-scale density observable in pan-European data. A finer population grid could reveal street-scale density effects within neighbourhoods; it could not remove the form gradient documented across them. FSI is itself a fine-grained measure of built (as opposed to residential) density, so the comparison separates built form from residential crowding; it does not claim that density in general is irrelevant. These observations are consistent with the Spacematrix argument that building density is a multi-indicator condition whose components carry independent information \citep{berghauser2010spacematrix, godoyshimizu2021density}.
 
-Within the morphological signal, Intensity and Continuity appear to operate on different service domains. For commercial services, FSI accounts for the larger share of the within-city association (\mFSIshareMin--\mFSIshareMax\%), with frontage adding \mContshareMin--\mContshareMax\% independently. A plausible mechanism for the frontage contribution runs through the ground floor: FSI concentrates potential customers and floor space around a street, while continuous frontage supplies the street-facing ground-floor premises that small commercial establishments occupy. This would explain why the frontage effect is strongest for retail and eat \& drink, the categories most dependent on ground-floor premises and passing footfall (Plates~5--6), and why continuity roughly halves commercial desert fractions at constant intensity (Plate~6). The dataset does not observe ground-floor use directly, so this reading remains inferential. For green space the pattern inverts: frontage ratio carries the larger share (\mContGreenShare\%) and FSI only \mFSIGreenShare\%. Because the inverted green gradient is shallower than the commercial one, the green-space gap between compact and dispersed fabric is smaller than the corresponding commercial gap. At the city level the two access dimensions do not trade off as simply: Spain, Italy, and Poland each have cities with short distances on both commercial and green dimensions, while German and Nordic cities tend toward short green distances alongside longer commercial ones.
+Within the morphological signal, Intensity and Continuity appear to operate on different service domains. For commercial services, FSI accounts for the larger share of the within-city association (\mFSIshareMin--\mFSIshareMax\%), with frontage adding \mContshareMin--\mContshareMax\% independently. A plausible mechanism for the frontage contribution runs through the ground floor: FSI concentrates potential customers and floor space around a street, while continuous frontage supplies the street-facing ground-floor premises that small commercial establishments occupy. This would explain why the frontage effect is clearest for retail, the category most dependent on ground-floor premises and passing footfall (Plates~5--6), and why continuity cuts commercial desert fractions by a third to a half at constant intensity (Plate~6). The dataset does not observe ground-floor use directly, so this reading remains inferential. For green space the pattern inverts: frontage ratio carries the larger share (\mContGreenShare\%) and FSI only \mFSIGreenShare\%. Because the inverted green gradient is shallower than the commercial one, the green-space gap between compact and dispersed fabric is smaller than the corresponding commercial gap. At the city level the two access dimensions do not trade off as simply: Spain, Italy, and Poland each have cities with short distances on both commercial and green dimensions, while German and Nordic cities tend towards short green distances alongside longer commercial ones.
 
 Network structure is correlated with morphological type (fine-grained perimeter-block fabric tends to produce denser street networks), and network centrality alone accounts for \mNetworkRsqMin--\mNetworkRsqMax\% of within-city variance in commercial service distances. Part of the association attributed to building arrangement may therefore run through network structure, which the dataset's morphological and network metrics together could help disentangle. Form is also entangled with the commercial cultures and development histories that accompany it: Intense--Attached fabric tends to coincide with histories of mixed-use intensification and dispersed small-establishment commercial activity. Separating the two is a promising direction for further research, for which the cross-sectional patterns documented here offer a starting point.
 
 \subsection{Regional and institutional patterns}
 
-The atlas records a broad periodisation that cuts across European regions \citep{talen2012city}. Pre-mid-twentieth-century development tends to correspond to Intense--Attached types; mid-twentieth-century expansion (modernist reconstruction, mikrorayon planning, suburban growth) produced the sparser, more detached fabric that now forms the majority of the network. The paired comparisons in Plate~10 show how distinct planning traditions register on these axes while often producing similar commercial outcomes. The recurrence of such patterns across \nCities{} cities in different national contexts is a starting point for more targeted studies of how planning traditions shape pedestrian access.
+The atlas records a broad periodisation that cuts across European regions. Pre-mid-twentieth-century development tends to correspond to Intense--Attached types; mid-twentieth-century expansion (modernist reconstruction, mikrorayon planning, suburban growth) produced the sparser, more detached fabric that now forms the majority of the network. The paired comparisons in Plate~10 show how distinct planning traditions register on these axes while often producing similar commercial outcomes. The recurrence of such patterns across \nCities{} cities in different national contexts is a starting point for more targeted studies of how planning traditions and regulatory codes shape pedestrian access \citep{talen2012city}.
 
 \subsection{Applications and planning debates}
 
@@ -379,9 +379,9 @@ On the data side, Overture Maps POI coverage is uneven across countries. A compa
 \label{sec:conclusion}
 % ==============================================================================
 
-This atlas has organised \nTotalM{} million European streets into eight morphological types defined by three measurable axes (intensity, continuity, and irregularity) and shown that this form is systematically associated with pedestrian access to services and green space, and with demographic composition, across \nCities{} cities. It is, to our knowledge, the first account of European urban fabric at pedestrian scale to span the continent with uniform methods. The Intense--Attached types combine building mass with continuous facade enclosure, ground-floor frontage, and short walks to commercial services; they account for approximately \pctIntenseAttached\% of the continent's classified streets.
+This atlas has measured \nTotalM{} million European streets and organised the \nClassifiedM{} million with complete morphological data into eight types defined by three measurable axes (intensity, continuity, and irregularity), showing that this form is systematically associated with pedestrian access to services and green space, and with demographic composition, across \nCities{} cities. It is, to our knowledge, the first account of European urban fabric at pedestrian scale to span the continent with uniform methods. The Intense--Attached types combine building mass with continuous facade enclosure, ground-floor frontage, and short walks to commercial services; they account for approximately \pctIntenseAttached\% of the continent's classified streets.
 
-The central regularity is that morphological type tracks pedestrian access to commercial services even within the same city and population-density band: at matched density the Attached--Freestanding gap is \matchedGainMin--\matchedGainMax\,m across every commercial category, holding in \matchedDirMin--\matchedDirMax\% of cities, so form, rather than density, carries the signal (within the limits of the 1\,km census grid). The types recur across national borders in patterns shaped by planning tradition and topographic constraint, and the Light types that carry the longest service distances also host the higher shares of children. Green-space access, by contrast, is not determined by form alone: the street-level compact--green trade-off weakens across cities, with some compact cities (Poland, Spain, Italy) close to both commercial and green dimensions, suggesting green provision can be addressed by planning strategies or intentional policies.
+The central regularity is that morphological type tracks pedestrian access to commercial services even within the same city and population-density band: at matched density the Attached--Freestanding gap is \matchedGainMin--\matchedGainMax\,m across the four matched service categories, holding in \matchedDirMin--\matchedDirMax\% of cities, so the signal follows form rather than density within the limits of the 1\,km census grid. The types recur across national borders in patterns shaped by planning tradition and topographic constraint, and the Light types that carry the longest service distances also host the higher shares of children. Green-space access, by contrast, is not determined by form alone: the street-level compact--green trade-off weakens across cities, with some compact cities (Poland, Spain, Italy) close to both commercial and green dimensions, suggesting green provision can be addressed by planning policy.
 
 The SOAR-EU dataset and its adjustable thresholds are openly available, supporting temporal monitoring as sources refresh, within-city analyses of the regulatory variation the atlas documents, quasi-experimental designs around historical disruptions, and extension to dimensions these plates do not address. More broadly, the atlas is offered as empirical infrastructure for comparative urban morphology: a shared measurement base and descriptive vocabulary under which \nCities{} cities can be studied with the same instruments. Questions that have so far been confined to single cities or small samples, such as how planning regimes shape pedestrian access, how fabric conditions demographic sorting, and how green provision responds to compactness, can now be addressed at the scale of a continent.
 
@@ -395,7 +395,7 @@ The authors declare that they have no known competing financial interests or per
 
 \section*{Ethics Statement}
 
-This research did not involve human subjects, animal experiments, or data collected from social media platforms. Census demographics are aggregated to 1\,km$^2$ grid cells and contain no individual-level information. All source datasets are publicly accessible under their respective licenses.
+This research did not involve human subjects, animal experiments, or data collected from social media platforms. Census demographics are aggregated to 1\,km$^2$ grid cells and contain no individual-level information. All source datasets are publicly accessible under their respective licences.
 
 \section*{Declaration of Generative AI and AI-assisted Technologies in the Writing Process}
 
@@ -425,9 +425,9 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
 \begin{thebibliography}{45}
 
   \bibitem[Angel et al.(2016)]{angel2016atlas}
-  Angel, S., Blei, A.M., Parent, J., Lamson-Hall, P., Galarza-Sanchez, N., 2016.
+  Angel, S., Blei, A.M., Parent, J., Lamson-Hall, P., Galarza S\'{a}nchez, N., 2016.
   \newblock \emph{Atlas of Urban Expansion --- 2016 Edition}.
-  \newblock NYU Urban Expansion Program, New York.
+  \newblock NYU Urban Expansion Program, UN-Habitat, and Lincoln Institute of Land Policy, New York.
 
   \bibitem[Araldi and Fusco(2019)]{araldi2019street}
   Araldi, A., Fusco, G., 2019.
@@ -439,21 +439,18 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Ballantyne, P., Berragan, C., 2024.
   \newblock Overture Point of Interest data for the United Kingdom: A comprehensive, queryable open data product, validated against Geolytix supermarket data.
   \newblock \emph{Environment and Planning B: Urban Analytics and City Science} 51(8), 1974--1980.
+  \newblock \url{https://doi.org/10.1177/23998083241263124}.
 
   \bibitem[Barrington-Leigh and Millard-Ball(2017)]{barringtonleigh2017world}
   Barrington-Leigh, C., Millard-Ball, A., 2017.
   \newblock The world's user-generated road map is more than 80\% complete.
   \newblock \emph{PLoS ONE} 12(8), e0180698.
+  \newblock \url{https://doi.org/10.1371/journal.pone.0180698}.
 
   \bibitem[Berghauser~Pont and Haupt(2010)]{berghauser2010spacematrix}
   Berghauser~Pont, M., Haupt, P., 2010.
   \newblock \emph{Spacematrix: Space, Density and Urban Form}.
   \newblock NAi Publishers, Rotterdam.
-
-  \bibitem[Berghauser~Pont and Haupt(2021)]{berghauser2021density}
-  Berghauser~Pont, M., Haupt, P., 2021.
-  \newblock Density and morphology: from the building scale to the city scale.
-  \newblock \emph{Buildings and Cities} 2(1), 92--113.
 
   \bibitem[Berghauser~Pont et al.(2019)]{berghauser2019systematic}
   Berghauser~Pont, M., Stavroulaki, G., Bobkova, E., Gil, J., Marcus, L., Olsson, J., Sun, K., Serra, M., Hausleitner, B., Dhanani, A., Legeby, A., 2019.
@@ -465,11 +462,13 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Boeing, G., 2019.
   \newblock Urban spatial order: street network orientation, configuration, and entropy.
   \newblock \emph{Applied Network Science} 4, 67.
+  \newblock \url{https://doi.org/10.1007/s41109-019-0189-1}.
 
   \bibitem[Boeing(2020)]{boeing2020multi}
   Boeing, G., 2020.
-  \newblock A multi-scale analysis of 27,000 urban street networks.
-  \newblock \emph{Environment and Planning B: Urban Analytics and City Science} 47, 590--608.
+  \newblock A multi-scale analysis of 27,000 urban street networks: Every US city, town, urbanized area, and Zillow neighborhood.
+  \newblock \emph{Environment and Planning B: Urban Analytics and City Science} 47(4), 590--608.
+  \newblock \url{https://doi.org/10.1177/2399808318784595}.
 
   \bibitem[Busquets(2005)]{busquets2005barcelona}
   Busquets, J., 2005.
@@ -485,16 +484,19 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Cervero, R., Kockelman, K., 1997.
   \newblock Travel demand and the 3Ds: Density, diversity, and design.
   \newblock \emph{Transportation Research Part D: Transport and Environment} 2(3), 199--219.
+  \newblock \url{https://doi.org/10.1016/S1361-9209(97)00009-6}.
 
   \bibitem[De~Decker(2008)]{dedecker2008facets}
   De~Decker, P., 2008.
   \newblock Facets of housing and housing policies in Belgium.
   \newblock \emph{Journal of Housing and the Built Environment} 23(3), 155--171.
+  \newblock \url{https://doi.org/10.1007/s10901-008-9110-4}.
 
   \bibitem[Dibble et al.(2019)]{dibble2019origin}
   Dibble, J., Prelorendjos, A., Romice, O., Zanella, M., Strano, E., Pagel, M., Porta, S., 2019.
   \newblock On the origin of spaces: Morphometric foundations of urban form evolution.
   \newblock \emph{Environment and Planning B: Urban Analytics and City Science} 46(4), 707--730.
+  \newblock \url{https://doi.org/10.1177/2399808317725075}.
 
   \bibitem[Diefendorf(1993)]{diefendorf1993wake}
   Diefendorf, J.M., 1993.
@@ -505,6 +507,7 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Dovey, K., Pafka, E., 2014.
   \newblock The urban density assemblage: Modelling multiple measures.
   \newblock \emph{Urban Design International} 19, 66--76.
+  \newblock \url{https://doi.org/10.1057/udi.2013.13}.
 
   \bibitem[{European Commission}(2024)]{florczyk2019ghs}
   European Commission, Joint Research Centre, 2024.
@@ -520,16 +523,25 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Fleischmann, M., Feliciotti, A., Romice, O., Porta, S., 2022.
   \newblock Methodological foundation of a numerical taxonomy of urban form.
   \newblock \emph{Environment and Planning B: Urban Analytics and City Science} 49, 1283--1299.
+  \newblock \url{https://doi.org/10.1177/23998083211059835}.
 
   \bibitem[Giles-Corti et al.(2016)]{gilescorti2016city}
   Giles-Corti, B., Vernez-Moudon, A., Reis, R., Turrell, G., Dannenberg, A.L., Badland, H., Foster, S., Lowe, M., Sallis, J.F., Stevenson, M., Owen, N., 2016.
   \newblock City planning and population health: a global challenge.
   \newblock \emph{The Lancet} 388(10062), 2912--2924.
+  \newblock \url{https://doi.org/10.1016/S0140-6736(16)30066-6}.
+
+  \bibitem[Godoy-Shimizu et al.(2021)]{godoyshimizu2021density}
+  Godoy-Shimizu, D., Steadman, P., Evans, S., 2021.
+  \newblock Density and morphology: from the building scale to the city scale.
+  \newblock \emph{Buildings and Cities} 2(1), 92--113.
+  \newblock \url{https://doi.org/10.5334/bc.83}.
 
   \bibitem[Hamaina et al.(2012)]{hamaina2012towards}
   Hamaina, R., Leduc, T., Moreau, G., 2012.
   \newblock Towards urban fabrics characterization based on buildings footprints.
   \newblock In: Gensel, J., Josselin, D., Vandenbroucke, D. (Eds.), \emph{Bridging the Geographic Information Sciences}. Springer, Berlin, pp.~327--346.
+  \newblock \url{https://doi.org/10.1007/978-3-642-29063-3_18}.
 
   \bibitem[Hautam\"aki and Donner(2022)]{hautamaki2022modern}
   Hautam\"aki, R., Donner, J., 2022.
@@ -551,16 +563,19 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Louf, R., Barthelemy, M., 2014.
   \newblock A typology of street patterns.
   \newblock \emph{Journal of the Royal Society Interface} 11, 20140924.
+  \newblock \url{https://doi.org/10.1098/rsif.2014.0924}.
 
   \bibitem[Maloutas(2003)]{maloutas2003promoting}
   Maloutas, T., 2003.
   \newblock Promoting social sustainability: the case of Athens.
   \newblock \emph{City} 7(2), 167--181.
+  \newblock \url{https://doi.org/10.1080/1360481032000136732}.
 
   \bibitem[Moreno et al.(2021)]{moreno2021fifteen}
   Moreno, C., Allam, Z., Chabaud, D., Gall, C., Pratlong, F., 2021.
   \newblock Introducing the ``15-minute city'': Sustainability, resilience and place identity in future post-pandemic cities.
   \newblock \emph{Smart Cities} 4(1), 93--111.
+  \newblock \url{https://doi.org/10.3390/smartcities4010006}.
 
   \bibitem[Moudon(1997)]{moudon1997urban}
   Moudon, A.V., 1997.
@@ -571,21 +586,22 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Neuman, M., 2005.
   \newblock The compact city fallacy.
   \newblock \emph{Journal of Planning Education and Research} 25(1), 11--26.
+  \newblock \url{https://doi.org/10.1177/0739456X04270466}.
 
   \bibitem[Oliveira(2016)]{oliveira2016urban}
   Oliveira, V., 2016.
   \newblock \emph{Urban Morphology: An Introduction to the Study of the Physical Form of Cities}.
   \newblock Springer, Cham.
 
-  \bibitem[{Overture Maps Foundation}(2024)]{overture2024}
-  {Overture Maps Foundation}, 2024.
-  \newblock Overture Maps Data --- 2024 Release [dataset].
-  \newblock \url{https://overturemaps.org}.
+  \bibitem[{Overture Maps Foundation}(2026)]{overture2026}
+  {Overture Maps Foundation}, 2026.
+  \newblock Overture Maps Data --- Release 2026-05-20.0 [dataset].
+  \newblock \url{https://docs.overturemaps.org/blog/2026/05/20/release-notes/}.
 
   \bibitem[Panerai et al.(2004)]{panerai2004urban}
   Panerai, P., Castex, J., Depaule, J.-C., Samuels, I., 2004.
   \newblock \emph{Urban Forms: The Death and Life of the Urban Block}.
-  \newblock Architectural Press, London.
+  \newblock Architectural Press, Oxford.
 
   \bibitem[Simons(2021)]{simons2021thesis}
   Simons, G.D., 2021.
@@ -597,7 +613,7 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Simons, G., 2023.
   \newblock The cityseer Python package for pedestrian-scale network-based urban analysis.
   \newblock \emph{Environment and Planning B: Urban Analytics and City Science} 50(5), 1328--1344.
-  \newblock \url{https://doi.org/10.1177/23998083221133827}
+  \newblock \url{https://doi.org/10.1177/23998083221133827}.
 
   \bibitem[Simons et al.(2026)]{simons2024soar}
   Simons, G., Karimi, K., Zhand, S., 2026.
@@ -620,8 +636,8 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   \newblock \emph{City Rules: How Regulations Affect Urban Form}.
   \newblock Island Press, Washington, DC.
 
-  \bibitem[Tsenkova and Nedovic-Budic(2006)]{tsenkova2006urban}
-  Tsenkova, S., Nedovic-Budic, Z. (Eds.), 2006.
+  \bibitem[Tsenkova and Nedovi\'{c}-Budi\'{c}(2006)]{tsenkova2006urban}
+  Tsenkova, S., Nedovi\'{c}-Budi\'{c}, Z. (Eds.), 2006.
   \newblock \emph{The Urban Mosaic of Post-Socialist Europe: Space, Institutions and Policy}.
   \newblock Physica-Verlag, Heidelberg.
 
@@ -629,6 +645,7 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
   Vanderhaegen, S., Canters, F., 2017.
   \newblock Mapping urban form and function at city block level using spatial metrics.
   \newblock \emph{Landscape and Urban Planning} 167, 399--409.
+  \newblock \url{https://doi.org/10.1016/j.landurbplan.2017.05.023}.
 
   \bibitem[Whitehand(2001)]{whitehand2001british}
   Whitehand, J.W.R., 2001.
@@ -654,9 +671,9 @@ The SOAR-EU dataset is available at Zenodo (\href{https://doi.org/10.5281/zenodo
 
 Overture Maps building footprints combine community-contributed sources (primarily OpenStreetMap) with ML-derived sources (primarily Microsoft ML Building Footprints). The ML fraction varies widely across countries: low where cadastral imports are complete (e.g.\ the Netherlands and France) and approaching half in the most ML-reliant (e.g.\ Romania and Spain). Metrics that depend on exact polygon boundary coincidence, particularly shared wall ratio, are systematically lower in cities with higher ML fractions, because ML-derived footprints introduce gaps between adjacent buildings and sometimes merge neighbouring structures into single polygons. The companion data paper documents this effect in more detail \citep{simons2024soar}.
 
-Plate~4 restricts to \nMLRestrictedCities{} cities with less than 10\% ML-derived footprints to ensure that per-building morphometrics (area, perimeter, corners, volume, shared wall ratio) reflect building form rather than digitisation artefacts. The full \nCities-city version (Figure~\ref{fig:plate4_full}) shows the same deviation pattern in every octant; the only material shift is in shared wall ratio, which is suppressed in higher-ML cities as expected.
+Plate~4 restricts to \nMLRestrictedCities{} cities with less than 10\% ML-derived footprints to ensure that per-building morphometrics (area, perimeter, corners, volume, shared wall ratio) reflect building form rather than digitisation artefacts. The full \nCities-city version (Figure~\ref{fig:plate4_full}) shows the same deviation pattern in every type; the only material shift is in shared wall ratio, which is suppressed in higher-ML cities as expected.
 
-The Continuity axis uses bilateral street-frontage ratio rather than shared wall ratio precisely because it is robust to source composition: it measures building edge coverage along each side of the street within a 35\,m corridor, taking the more-covered side, and is considerably less sensitive to ML fraction than SWR (companion data paper \citep{simons2024soar}, Supplementary~S5). At the classification threshold of \threshCont, the proportion classified as continuous differs by under two percentage points between high-quality and remaining cities. All other plates use the full \nCities-city dataset, as their displayed variables (service accessibility, demographics, network density) are independent of building footprint source quality.
+The Continuity axis uses bilateral street-frontage ratio rather than shared wall ratio (SWR) because it is robust to source composition: it measures building edge coverage along each side of the street within a 35\,m corridor, taking the more-covered side, and is considerably less sensitive to ML fraction than SWR (companion data paper \citep{simons2024soar}, Supplementary~S5). At the classification threshold of \threshCont, the proportion classified as continuous differs by under two percentage points between high-quality and remaining cities. All other plates use the full \nCities-city dataset, as their displayed variables (service accessibility, demographics, network density) are independent of building footprint source quality.
 
 \begin{figure}[p]
   \centering
@@ -672,14 +689,14 @@ Figure~\ref{fig:frontage_validation} validates the frontage ratio as a continuit
 
 At the city level, median frontage ratio varies from near zero in Finnish and Polish cities, where freestanding apartment blocks and detached houses dominate, to its highest in Greek cities with dense Mediterranean infill (Figure~\ref{fig:frontage_validation}A). The ordering follows known housing traditions: the Netherlands and Belgium (terraced canal and row houses) rank high; Nordic and Central European cities (freestanding blocks, regulated open space) rank low. Romania ranks higher than its eastern European neighbours, consistent with its dense historic urban cores. Italy and Spain span the full range within their borders, reflecting the coexistence of compact historic cores and dispersed suburban development.
 
-Frontage ratio is only modestly correlated with FSI at the city level (Pearson $r = \rFrontageFSIcity$): denser cities tend toward somewhat higher frontage, but the two axes share little variance, so the Continuity axis still captures configuration that Intensity does not. A city can be high-intensity with freestanding towers or low-rise with continuous terraces; frontage distinguishes these configurations where FSI does not.
+Frontage ratio is only modestly correlated with FSI at the city level (Pearson $r = \rFrontageFSIcity$): denser cities tend towards somewhat higher frontage, but the two axes share little variance, so the Continuity axis still captures configuration that Intensity does not. A city can be high-intensity with freestanding towers or low-rise with continuous terraces; frontage distinguishes these configurations where FSI does not.
 
-Splitting streets by intensity reveals distinct distributional shapes (Figure~\ref{fig:frontage_validation}B). Low-intensity streets (FSI $<$ \threshFSI) show a broad interior peak and a declining tail, consistent with the mixture of detached houses, terraces, and low-rise courtyards that make up most European low-intensity fabric. High-intensity streets (FSI $\geq$ \threshFSI) instead ramp monotonically toward a mode at 1, the perimeter-block form characteristic of high-intensity European centres. The two distributions cross near two-thirds: above this value, high-intensity streets outnumber low-intensity streets at every frontage level. The \threshCont\ threshold sits above the crossover, in the range where continuous-frontage fabric dominates both subsets. The choice of \threshCont\ rests on interpretability: a street where at least three-quarters of its more-fronted side is occupied by building facades reads as predominantly enclosed.
+Splitting streets by intensity reveals distinct distributional shapes (Figure~\ref{fig:frontage_validation}B). Low-intensity streets (FSI $<$ \threshFSI) show a broad interior peak and a declining tail, consistent with the mixture of detached houses, terraces, and low-rise courtyards that make up most European low-intensity fabric. High-intensity streets (FSI $\geq$ \threshFSI) instead ramp monotonically towards a mode at 1, the perimeter-block form characteristic of high-intensity European centres. The two distributions cross near two-thirds: above this value, high-intensity streets outnumber low-intensity streets at every frontage level. The \threshCont\ threshold sits above the crossover, in the range where continuous-frontage fabric dominates both subsets. The choice of \threshCont\ rests on interpretability: a street where at least three-quarters of its more-fronted side is occupied by building facades reads as predominantly enclosed.
 
 \begin{figure}[p]
   \centering
   \includegraphics[width=0.92\textwidth]{outputs/atlas/validation/frontage_validation.pdf}
-  \caption{Street-frontage ratio across European cities. (A)~Ridgeline densities of city-median frontage ratio by country (KDE where $n \geq 5$, rug ticks otherwise), ordered by national median (dotted red drop-line); the dotted grey line marks the grand median across all cities. (B)~Street-level frontage distribution split by intensity: density histograms for low-intensity (FSI $<$ \threshFSI, blue) and high-intensity (FSI $\geq$ \threshFSI, red) streets. The dominant zero mode (freestanding facades on both sides of the street) is truncated to show interior structure; the truncated fraction is annotated in-panel. The dashed line marks the \threshCont\ classification threshold; the dotted grey line marks the distribution crossover near two-thirds where high-intensity streets begin to outnumber low-intensity streets.}
+  \caption{Street-frontage ratio across European cities. (A)~Ridgeline densities of city-median frontage ratio by country (kernel density estimates where $n \geq 5$, rug ticks otherwise), ordered by national median (dotted red drop-line); the dotted grey line marks the grand median across all cities. (B)~Street-level frontage distribution split by intensity: density histograms for low-intensity (FSI $<$ \threshFSI, blue) and high-intensity (FSI $\geq$ \threshFSI, red) streets. The dominant zero mode (freestanding facades on both sides of the street) is truncated to show interior structure; the truncated fraction is annotated in-panel. The dashed line marks the \threshCont\ classification threshold; the dotted grey line marks the distribution crossover near two-thirds where high-intensity streets begin to outnumber low-intensity streets.}
   \label{fig:frontage_validation}
 \end{figure}
 
@@ -690,7 +707,7 @@ Splitting streets by intensity reveals distinct distributional shapes (Figure~\r
 
 \emph{Axis independence.} The three axes carry largely independent information. Across \nAxesM{} million classified streets, the Pearson correlation between Intensity and Continuity is \rIntCont{}, and correlations involving Irregularity are close to zero (\rIntIrreg{} with Intensity, \rContIrreg{} with Continuity); all eight types are populated.
 
-\emph{External validity.} As a check that the classification captures properties it was not built from, type membership also discriminates fabric variables not used in its construction: it explains \etaSqGsi{} of the variance in ground-space index, \etaSqHeight{} of building height, and \etaSqBldgDensity{} of building count per walking neighbourhood (the $\eta^2$ statistic).
+\emph{External validity.} As a check that the classification captures properties it was not built from, type membership also discriminates fabric variables not used in its construction: it explains \etaSqGsi{} of the variance in ground-space index and \etaSqHeight{} of building height (the $\eta^2$ statistic); building count per walking neighbourhood is only weakly discriminated ($\eta^2$ = \etaSqBldgDensity{}).
 
 \section{Analytical supplement: within-city patterns}
 \label{sec:analytical-supplement}

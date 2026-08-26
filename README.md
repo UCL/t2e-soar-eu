@@ -99,10 +99,10 @@ No preprocessing is needed — the metrics step reads this file directly.
 
 ### Metrics
 
-Compute all street-segment metrics:
+Compute all street-segment metrics (optionally in parallel):
 
 ```bash
-python -m src.processing.generate_metrics --zip
+python -m src.processing.generate_metrics --zip --workers 8
 ```
 
 ### Downloading Urban Atlas and Street Tree Layer from CDSE
@@ -212,4 +212,4 @@ This repository depends on copy-left open source packages licensed as AGPLv3 and
 
 If you use this dataset or code, please cite:
 
-> Simons, G., Karimi, K., Zhand, S. (2026). SOAR-EU: Scalable Open Automatable Reproducible pedestrian-scale urban metrics for 626 European urban centres. Available at: <https://github.com/UCL/t2e-soar-eu>
+> Simons, G., Karimi, K., Zhand, S. (2026). SOAR-EU: A Scalable, Open, Automatable, and Reproducible European Urban Dataset. Available at: <https://github.com/UCL/t2e-soar-eu>

@@ -145,13 +145,24 @@ for fam_name, fam_cols in families.items():
 
 decomp_df = pd.DataFrame(rows)
 
+# Population density's marginal contribution, derived from the computed rows
+# rather than hardcoded: Everything vs (3 axes + network).
+_r2_full = rows[-1]
+_r2_no_dens = rows[-2]
+_max_delta = max(abs(_r2_full[o] - _r2_no_dens[o]) for o in OUTCOME_COLS)
+_delta_txt = (
+    "is 0.000 for every outcome"
+    if round(_max_delta, 3) == 0
+    else f"is at most {_max_delta:.3f} across outcomes"
+)
+
 # Write LaTeX table
 with open(SUPP_DIR / "table_variance_decomposition.tex", "w") as f:
     f.write("\\begin{table}[ht]\n")
     f.write("  \\centering\n")
     f.write("  \\caption{Within-city $R^2$ by predictor family. All models use city-demeaned\n")
     f.write("    (within-city) estimation with 10\\% spatial subsampling. Population density's\n")
-    f.write("    marginal $\\Delta R^2$ when added to the full model is 0.000 for every outcome.}\n")
+    f.write(f"    marginal $\\Delta R^2$ when added to the full model {_delta_txt}.}}\n")
     f.write("  \\label{tab:decomposition}\n")
     f.write("  \\small\n")
     out_names = list(OUTCOME_COLS.keys())

@@ -2,9 +2,9 @@
 Plate 6 — Streets Without Access.
 
 Grid matrix where each cell is a 10×10 waffle chart showing what
-fraction of streets have zero services within 400 metres.  Filled
-squares use the octant colour; empty squares are barely visible.
-Columns = 8 octant types, rows = service categories.
+fraction of streets have zero services within 400 metres.  White
+squares mark the desert fraction; filled squares use the service
+colour.  Columns = 8 octant types, rows = service categories.
 """
 
 import sys

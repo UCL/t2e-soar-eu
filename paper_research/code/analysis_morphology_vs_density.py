@@ -453,7 +453,7 @@ print("=" * 80)
 print("Within each octant, how much does pop density improve access?\n")
 
 oct_data = classified[["octant", POP_DENSITY["pop_density"], OUTCOME_COLS["retail"]]].dropna()
-print(f"  {'Octant':<8} {'Pop Q1':>10} {'Pop Q3':>10} {'Pop Q5':>10} {'Q5/Q1':>8} {'N':>10}")
+print(f"  {'Octant':<8} {'Pop Q1':>10} {'Pop Q3':>10} {'Pop Q5':>10} {'Q1/Q5':>8} {'N':>10}")
 print(f"  {'-'*55}")
 
 for octant in ["HHH", "HHL", "HLH", "HLL", "LHH", "LHL", "LLH", "LLL"]:

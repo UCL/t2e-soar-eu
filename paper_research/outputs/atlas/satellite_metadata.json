@@ -10,7 +10,7 @@
     "n_nearby": 149,
     "intensity": 2.81,
     "continuity": 0.89,
-    "irregularity": 6.82
+    "irregularity": 6.64
   },
   {
     "octant": "HHL",
@@ -21,7 +21,7 @@
     "lon": 23.7279977,
     "bounds_fid": 854,
     "n_nearby": 76,
-    "intensity": 4.55,
+    "intensity": 4.53,
     "continuity": 0.91,
     "irregularity": 1.06
   },
@@ -36,7 +36,7 @@
     "n_nearby": 81,
     "intensity": 3.46,
     "continuity": 0.59,
-    "irregularity": 13.28
+    "irregularity": 10.26
   },
   {
     "octant": "HLL",
@@ -60,9 +60,9 @@
     "lon": 1.8561361443882511,
     "bounds_fid": 2560,
     "n_nearby": 47,
-    "intensity": 0.67,
+    "intensity": 0.66,
     "continuity": 0.93,
-    "irregularity": 1.63
+    "irregularity": 1.75
   },
   {
     "octant": "LLH",
@@ -73,9 +73,9 @@
     "lon": 12.95216,
     "bounds_fid": 251,
     "n_nearby": 37,
-    "intensity": 0.24,
+    "intensity": 0.25,
     "continuity": 0.43,
-    "irregularity": 8.31
+    "irregularity": 8.36
   },
   {
     "octant": "LLL",
@@ -88,7 +88,7 @@
     "n_nearby": 20,
     "intensity": 0.24,
     "continuity": 0.45,
-    "irregularity": 1.43
+    "irregularity": 1.46
   },
   {
     "octant": "LHH",
@@ -101,6 +101,6 @@
     "n_nearby": 154,
     "intensity": 0.7,
     "continuity": 0.88,
-    "irregularity": 8.78
+    "irregularity": 8.51
   }
 ]

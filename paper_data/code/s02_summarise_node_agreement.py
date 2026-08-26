@@ -10,6 +10,8 @@ wired correctly before scaling to many reference cities.
 
 from __future__ import annotations
 
+import zlib
+
 import numpy as np
 import pandas as pd
 from config import OUTPUT_DIR
@@ -114,8 +116,9 @@ def main() -> int:
         coords_x = merged["x_ovt"].to_numpy(dtype=float) if has_coords else None
         coords_y = merged["y_ovt"].to_numpy(dtype=float) if has_coords else None
 
-        # Per-city RNG for reproducible block bootstrap.
-        city_seed = SPATIAL_BLOCK_BOOT_SEED + hash(bounds_fid) % (2**31)
+        # Per-city RNG for reproducible block bootstrap. zlib.crc32 is a
+        # stable digest; Python's built-in hash() is salted per process.
+        city_seed = SPATIAL_BLOCK_BOOT_SEED + zlib.crc32(str(bounds_fid).encode()) % (2**31)
         boot_rng = np.random.default_rng(city_seed)
 
         for _cat_i, cat in enumerate(categories):

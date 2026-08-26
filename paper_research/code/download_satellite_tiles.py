@@ -29,7 +29,7 @@ ESRI_URL = (
 # Approximate metres per side at the exemplar zoom level
 EXTENT_M = 1000
 # Max resolution the API serves in Europe is ~0.3 m/pixel (zoom 19)
-TILE_SIZE = 1500  # 450m / 1500px = 0.3 m/pixel
+TILE_SIZE = 1500  # 1000m / 1500px ≈ 0.67 m/pixel
 
 # EPSG:3857 for web mercator bbox
 tr_4326_to_3857 = Transformer.from_crs(4326, 3857, always_xy=True)

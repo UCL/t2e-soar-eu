@@ -155,6 +155,7 @@ def _bootstrap_spearman_ci(
 
 
 def _min_supported(x: pd.DataFrame, key_col: str, score_col: str, *, supported_ge: float) -> float:
+    # Note: minima use point scores; headline support-matrix labels are CI-based (label_by_ci).
     if x.empty:
         return float("nan")
     sub = x[np.isfinite(x[score_col].astype(float))].copy()
@@ -352,6 +353,8 @@ def _panel_benchmark_between(
 
     # Between-city nearest: harmonic mean of city-level shares (city F1).
     # For each city, compute H(share_ovt, share_reg) = 2*p*q / (p+q).
+    # This is a prevalence-based agreement measure: it compares each source's
+    # within-tolerance share, not per-POI matches.
     sub = city[(city["metric"] == "nearest_within_share") & (city["source"].isin(["ovt", "reg"]))]
     if not sub.empty:
         for (category, tolerance_m), g in sub.groupby(["category", "tolerance_m"], dropna=False):

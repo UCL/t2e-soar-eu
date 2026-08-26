@@ -191,6 +191,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--workers", type=int, default=1, help="Number of worker processes.")
     parser.add_argument("--limit", type=int, default=None, help="Optional limit for test runs.")
+    parser.add_argument("--force", action="store_true", help="Recompute even if outputs exist.")
     args = parser.parse_args(argv)
 
     counts_path = CSV_DIR / "building_source_counts.csv"
@@ -198,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
     country_path = CSV_DIR / "building_source_by_country.csv"
     # country_path is the last unconditional write, so its presence signals a
     # completed run; require all three (downstream s05c reads by_country + metrics).
-    if counts_path.exists() and metrics_path.exists() and country_path.exists() and args.limit is None:
+    if counts_path.exists() and metrics_path.exists() and country_path.exists() and args.limit is None and not args.force:
         print(f"✓ Building-source audit outputs already exist, skipping: {counts_path.name}, {metrics_path.name}, {country_path.name}")
         return 0
 
@@ -276,6 +277,45 @@ def main(argv: list[str] | None = None) -> int:
     # -----------------------------------------------------------------------
     metrics_rows = [{k: v for k, v in r.items() if k != "dataset_counts"} for r in results]
     metrics_df = pd.DataFrame(metrics_rows).sort_values(["country", "city_label"])
+
+    # -----------------------------------------------------------------------
+    # 2b. Street-frontage summaries from the shared per-city cache
+    # -----------------------------------------------------------------------
+    # frontage_max lives on the streets layer; the parquet cache is the
+    # cheapest source. Supports the frontage-vs-ML-fraction comparison in
+    # Supplementary S5 and the continuity-threshold robustness figure quoted
+    # by the atlas companion paper.
+    CONT_THRESHOLD = 0.75
+    cache_dir = Path(os.environ.get("T2E_DATA_DIR", "")) / "temp_egs" / "shared_cache"
+    _GSI_COL = "cc_block_covered_ratio_median_400_wt"
+    _FSI_COL = "cc_block_far_median_400_wt"
+    frontage_rows = []
+    for fid in metrics_df["bounds_fid"]:
+        cache_file = cache_dir / f"city_{fid}.parquet"
+        if not cache_file.exists():
+            continue
+        city = pd.read_parquet(cache_file, columns=["frontage_max", _GSI_COL, _FSI_COL])
+        fr = city["frontage_max"].dropna()
+        if fr.empty:
+            continue
+        frontage_rows.append(
+            {
+                "bounds_fid": fid,
+                "median_frontage_max": float(fr.median()),
+                "median_block_gsi": float(city[_GSI_COL].median()),
+                "median_block_fsi": float(city[_FSI_COL].median()),
+                "n_frontage_streets": int(len(fr)),
+                "n_continuous_streets": int((fr >= CONT_THRESHOLD).sum()),
+            }
+        )
+    if frontage_rows:
+        metrics_df = metrics_df.merge(pd.DataFrame(frontage_rows), on="bounds_fid", how="left")
+        hq = metrics_df["ml_fraction"] <= 0.10
+        for label, mask in (("ML<=10% cities", hq), ("remaining cities", ~hq)):
+            grp = metrics_df.loc[mask]
+            pooled = 100 * grp["n_continuous_streets"].sum() / grp["n_frontage_streets"].sum()
+            print(f"  % streets continuous (frontage >= {CONT_THRESHOLD}), {label}: {pooled:.2f}")
+
     metrics_df.to_csv(metrics_path, index=False)
     print(f"Wrote per-city metrics:       {metrics_path}")
 
@@ -520,7 +560,9 @@ def _run_octant_test(metrics_df: pd.DataFrame) -> pd.DataFrame | None:
         print(f"    Cities with both sources: {len(has_both)}")
         print(f"    Median rank-biserial r:   {median_effect:+.3f}")
         print(f"    Fisher combined p-value:  {combined_p:.2e}")
-        direction = "community > ML" if median_effect > 0 else "ML > community"
+        # r = 1 - 2U/(n1*n2) with U = mannwhitneyu(comm, ml): negative r
+        # means community values are higher.
+        direction = "community > ML" if median_effect < 0 else "ML > community"
         print(f"    Direction:                {direction}")
 
     # Add global test stats to the summary

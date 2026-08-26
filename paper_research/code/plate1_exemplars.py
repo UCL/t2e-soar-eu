@@ -85,6 +85,9 @@ def _compute_local_values(meta_list):
 
         # Look up metric values from cache using FID → row index
         cache_df = pd.read_parquet(cache_file, columns=axis_cols)
+        # Sanity check: FID-1 positional lookup requires 1:1 row alignment
+        n_features = pyogrio.read_info(gpkg, layer="streets")["features"]
+        assert len(cache_df) == n_features, f"Cache/GPKG row mismatch for {m['city']}: {len(cache_df)} vs {n_features}"
         cache_rows = nearby_fids - 1  # FID is 1-based
         nearby_metrics = cache_df.iloc[cache_rows]
 
@@ -161,7 +164,7 @@ def build_plate1():
             y_top = total_h - TITLE_H - ri * (TILE_H + LABEL_H + PAD_Y)
             y_bot = y_top - TILE_H
 
-            # Crop to 3:4 aspect
+            # Crop to tile aspect (~2:1)
             tile = mpimg.imread(str(tp))
             th, tw = tile.shape[:2]
             target_ratio = TILE_W / TILE_H

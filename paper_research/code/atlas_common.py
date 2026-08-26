@@ -345,6 +345,27 @@ def classify_octants(df):
     return valid, thresholds
 
 
+# Nearest-distance columns are censored at this network distance: NaN means
+# "no instance within NEAREST_CAP m", not missing data.
+NEAREST_CAP = 1600
+
+
+def _fill_censored_nearest(frame):
+    """Fill censored nearest-distance NaNs with the cap distance.
+
+    Applied per city file, so a column absent from a city's cache (a coverage
+    gap) stays NaN after concatenation and is excluded from statistics, while
+    genuine beyond-reach streets are kept at the cap. Distance statistics such
+    as medians and desert fractions are unaffected by the exact fill value as
+    long as the relevant quantile lies below the cap.
+    """
+    suffix = f"_nearest_max_{NEAREST_CAP}"
+    for c in frame.columns:
+        if c.endswith(suffix):
+            frame[c] = frame[c].fillna(float(NEAREST_CAP))
+    return frame
+
+
 def load_all_cached(columns=None):
     """Load all cached city parquets into one DataFrame.
 
@@ -366,10 +387,10 @@ def load_all_cached(columns=None):
         for f in files:
             available = set(pq.read_schema(f).names)
             cols = [c for c in columns if c in available]
-            frames.append(pd.read_parquet(f, columns=cols))
+            frames.append(_fill_censored_nearest(pd.read_parquet(f, columns=cols)))
     else:
         for f in files:
-            frames.append(pd.read_parquet(f))
+            frames.append(_fill_censored_nearest(pd.read_parquet(f)))
     return pd.concat(frames, ignore_index=True)
 
 

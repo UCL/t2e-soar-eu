@@ -20,7 +20,6 @@ from __future__ import annotations
 import argparse
 import os
 import shutil
-import sqlite3
 import sys
 import tempfile
 import time
@@ -52,20 +51,6 @@ BUFFER_DIST = 35.0
 # ---------------------------------------------------------------------------
 # Per-city worker
 # ---------------------------------------------------------------------------
-
-
-def _remove_layer(gpkg_path: Path, layer: str):
-    try:
-        available = {name for name, _ in pyogrio.list_layers(gpkg_path)}
-        if layer in available:
-            conn = sqlite3.connect(str(gpkg_path))
-            conn.execute(f'DROP TABLE IF EXISTS "{layer}"')
-            conn.execute(f"DELETE FROM gpkg_contents WHERE table_name = '{layer}'")
-            conn.execute(f"DELETE FROM gpkg_geometry_columns WHERE table_name = '{layer}'")
-            conn.commit()
-            conn.close()
-    except Exception:
-        pass
 
 
 def _process_city(task: dict) -> dict:
@@ -111,6 +96,12 @@ def _process_city(task: dict) -> dict:
         if dry_run:
             result["status"] = "dry_run"
             return result
+
+        # Note: a rerun refreshes only the four frontage ratio columns, in
+        # both the cache and the gpkg streets layer.  frontage_edges_left/
+        # right (also returned by compute_street_frontage) are not written
+        # here: in the gpkg they keep the values from the original
+        # generate_metrics run, and the parquet cache does not carry them.
 
         # Write to parquet cache
         cache_file = cache_dir / f"city_{bounds_fid}.parquet"

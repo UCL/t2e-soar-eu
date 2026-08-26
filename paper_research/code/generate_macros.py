@@ -135,7 +135,7 @@ def main():
         + list(MORPH_COLS.values())
         + list(DEMO_COLS.values())
         + list(CENTRALITY_COLS.values())
-        + MORPH_COLS_LIST  # 200m morphometric columns for eta-squared / PCA
+        + MORPH_COLS_LIST  # 400m morphometric columns for eta-squared / PCA
     )
     print("Loading data …")
     df = load_all_cached(columns=all_cols)
@@ -153,6 +153,24 @@ def main():
 
     bounds = gpd.read_file(BOUNDARIES_PATH).to_crs(3035)
     n_countries = bounds["country"].nunique()
+    label_map = bounds.set_index("bounds_fid")["label"].to_dict()
+
+    def city_fids(names):
+        """Resolve city names to bounds_fids, tolerating composite labels.
+
+        Matches an exact label first, then a composite label such as
+        "Rotterdam [The Hague]". Substring matching is deliberately avoided
+        (e.g. "Madrid" must not match "Rivas-Vaciamadrid").
+        """
+        fids = []
+        for name in names:
+            matches = bounds[bounds["label"] == name]
+            if len(matches) == 0:
+                matches = bounds[bounds["label"].str.startswith(f"{name} [")]
+            if len(matches) == 0:
+                print(f"  WARNING: no boundary label match for city '{name}'")
+            fids.extend(matches["bounds_fid"].tolist())
+        return fids
 
     # ══════════════════════════════════════════════════════════════════
     # Global counts
@@ -273,12 +291,6 @@ def main():
     # ══════════════════════════════════════════════════════════════════
     mw.section("Plate 1 — Discrimination (eta-squared)")
     morph_available = [c for c in MORPH_COLS_LIST if c in classified.columns]
-    AXIS_COLS_SET = {
-        "cc_block_far_median_200_wt",
-        "frontage_max",
-        "cc_orientation_mad_200_nw",
-    }
-    [c for c in morph_available if c not in AXIS_COLS_SET]
 
     eta2_map = {}
     for col in morph_available:
@@ -446,8 +458,6 @@ def main():
         mw.add(f"madCtry{code}", cc[mad_col].median(), ".1f")
 
     # Within-city continuity percentages (pct streets >= frontage threshold)
-    label_map = bounds.set_index("bounds_fid")["label"].to_dict()
-    classified_label = classified["bounds_fid"].map(label_map)
     for city_name, macro_name in [
         ("Barcelona", "pctContBarcelona"),
         ("Athens", "pctContAthens"),
@@ -455,7 +465,7 @@ def main():
         ("Amsterdam", "pctContAmsterdam"),
         ("Brussels", "pctContBrussels"),
     ]:
-        mask = classified_label.str.contains(city_name, case=False, na=False)
+        mask = classified["bounds_fid"].isin(city_fids([city_name]))
         if mask.sum() == 0:
             continue
         pct = 100 * (classified.loc[mask, cont_col] >= 0.75).sum() / mask.sum()
@@ -776,8 +786,7 @@ def main():
         if "country" in filt:
             return city_df[city_df["country"].isin(filt["country"])]
         else:
-            fids = bounds[bounds["label"].isin(filt["cities"])]["bounds_fid"].values
-            return city_df[city_df.index.isin(fids)]
+            return city_df[city_df.index.isin(city_fids(filt["cities"]))]
 
     def med(group, col):
         if col not in group.columns:
@@ -876,8 +885,8 @@ def main():
             mw.add(f"dq{sn}Q{qw}best", best)
             mw.add(f"dq{sn}Q{qw}worst", worst)
 
-    # Continental retail median (for "76% of" comparison)
-    continental_retail_med = city_svc[retail_col].median()
+    # Continental retail median (street-level, consistent with svcRetailMed)
+    continental_retail_med = classified[retail_col].median()
     mw.add("retailContMed", continental_retail_med, ".0f")
     # Form gap as % of continental median at Q3
     if 3 in qo.index:
@@ -1022,17 +1031,15 @@ def main():
                     "hi_pct": hi,
                 }
             )
-        # Emit max absolute drift across types for this axis.
-        max_drift = (
-            max(abs(share_lo.get(o, 0.0) - share_md.get(o, 0.0)) * 100 for o in OCTANT_ORDER)
-            if len(share_lo) > 0
-            else 0
-        )
-        max_drift_hi = (
-            max(abs(share_hi.get(o, 0.0) - share_md.get(o, 0.0)) * 100 for o in OCTANT_ORDER)
-            if len(share_hi) > 0
-            else 0
-        )
+        # Emit max absolute drift across types for this axis. Shares are
+        # rounded to the 1-decimal precision displayed in the sensitivity
+        # table first, so a reader recomputing the drift from Table values
+        # reproduces the quoted maxima exactly.
+        def _r(share, o):
+            return round(share.get(o, 0.0) * 100, 1)
+
+        max_drift = max(abs(_r(share_lo, o) - _r(share_md, o)) for o in OCTANT_ORDER) if len(share_lo) > 0 else 0
+        max_drift_hi = max(abs(_r(share_hi, o) - _r(share_md, o)) for o in OCTANT_ORDER) if len(share_hi) > 0 else 0
         mw.add(f"sensMaxDrift{axis_label}Lo", max_drift, ".1f")
         mw.add(f"sensMaxDrift{axis_label}Hi", max_drift_hi, ".1f")
 

@@ -38,6 +38,14 @@ _INCLUDE_EXACT: dict[str, set[str]] = {
         "ns_node_idx",
         "x",
         "y",
+        "seg_length",
+        # street frontage (SOAR-generated)
+        "frontage_max",
+        "frontage_avg",
+        "frontage_left",
+        "frontage_right",
+        "frontage_edges_left",
+        "frontage_edges_right",
         # demographics
         "t",
         "density",

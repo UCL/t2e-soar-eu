@@ -36,7 +36,7 @@ def load_bldg_hts(bounds_in_path: str, data_dir_path: str, cities_data_out_dir: 
     unzip_dir = dir_path / "temp_unzipped/"
     for zip_file_name in tqdm(os.listdir(dir_path)):
         if zip_file_name.endswith(".zip"):
-            temp_unzip_dir = unzip_dir / zip_file_name.rstrip(".zip")
+            temp_unzip_dir = unzip_dir / zip_file_name.removesuffix(".zip")
             os.makedirs(temp_unzip_dir, exist_ok=True)
             src_zip_path = dir_path / zip_file_name
             with zipfile.ZipFile(src_zip_path, "r") as zip_ref:

@@ -26,7 +26,7 @@ A reference-by-reference record for both papers: the **gist** of each cited work
 
 9. **`ghsl2024`** — EC JRC, *GHS Urban Centre Database R2024A*. Defines urban centres via the Degree of Urbanisation (DEGURBA). *Used* for study-area definition; the DEGURBA definition in the text was corrected to include the built-up-surface limb (≥1,500 inhab/km² **or** ≥50% built-up). 🔧
 
-10. **`overture2026`** — Overture Maps Foundation, Release 2026-05-20.0. Source for street networks, POIs, and building footprints. *Used* throughout as the primary dynamic data source; the release exists and is correctly dated. ✅
+10. **`overture2026`** — Overture Maps Foundation, Release 2026-05-20.0. Source for street networks, POIs, and building footprints. *Used* throughout as the primary dynamic data source; the release exists and is correctly dated. ✅ (2026-08-25: URL updated to the release-notes page; the former /release/2026-05-20.0/ path now 404s.)
 
 11. **`eea2021ua`** — Copernicus *Urban Atlas 2021*. Land-cover/use blocks and green-space classes. *Used* for block morphology and green-space derivation; the class count was corrected from 27 (2012/2018 nomenclature) to 28 (2021: 19 urban + 9 rural). 🔧
 
@@ -54,7 +54,7 @@ A reference-by-reference record for both papers: the **gist** of each cited work
 
 23. **`abdeldayem2026`** — Abdeldayem et al. (2026), *Env. Plan. B*. Automated vs hybrid street-network modelling for centrality/accessibility. *Used* for the network-cleaning procedure. Verified (published March 2026; DOI resolves). ✅
 
-24. **`soar2026`** — Simons et al., *SOAR-EU* dataset, Zenodo. The deposited dataset itself. *Used* in Data Availability. Self-deposit; DOI populated (10.5281/zenodo.18961227). ⚠️ verify the deposit is public before submission.
+24. **`soar2026`** — Simons et al., *SOAR-EU* dataset, Zenodo. The deposited dataset itself. *Used* in Data Availability. Self-deposit; DOI populated (10.5281/zenodo.18961227). ⚠️ verify the deposit is public before submission. (2026-08-25: bibitem title aligned with the Zenodo deposit metadata and paper title, "SOAR-EU: A Scalable, Open, Automatable, and Reproducible European Urban Dataset".)
 
 ---
 
@@ -72,7 +72,7 @@ A reference-by-reference record for both papers: the **gist** of each cited work
 
 6. **`berghauser2010spacematrix`** — Berghauser Pont & Haupt (2010), *Spacematrix*. The FSI/GSI density framework. *Used* for the Intensity axis (FSI) and the density-as-condition argument. ✅
 
-7. **`berghauser2021density`** — Berghauser Pont & Haupt (2021), *Buildings & Cities* 2(1). Density as a multi-indicator condition across scales. *Used* to argue density components carry independent information. ✅
+7. **`godoyshimizu2021density`** — Godoy-Shimizu, Steadman & Evans (2021), *Buildings & Cities* 2(1), 92–113, DOI 10.5334/bc.83. Density and morphology from the building scale to the city scale. *Used* to argue density components carry independent information. ✅ (2026-08-25: the entry previously conflated this paper's title/pages with Berghauser Pont & Haupt as authors; corrected to Godoy-Shimizu et al. and verified against Crossref.)
 
 8. **`busquets2005barcelona`** — Busquets (2005), *Barcelona: The Urban Evolution of a Compact City*. *Used* (L140) for the ensanche account: deep-lot perimeter blocks whose courtyards were progressively filled as ordinances raised buildable volume. ⚠️ supported; note "floor-area ratio" is a modern shorthand (period instruments were height/depth/volume/coverage rules) and Cerdà's original blocks were open on 2–3 sides.
 
@@ -112,7 +112,7 @@ A reference-by-reference record for both papers: the **gist** of each cited work
 
 26. **`oliveira2016urban`** — Oliveira (2016), *Urban Morphology: An Introduction* (Springer). Textbook on the morphological traditions. *Used* as related work / Muratorian context (L58). ✅
 
-27. **`overture2024`** — Overture Maps Foundation data. *Used* (L64) as the source for networks, buildings, and POIs. ✅
+27. **`overture2026`** — Overture Maps Foundation, Release 2026-05-20.0. *Used* (L64) as the source for networks, buildings, and POIs. ✅ (2026-08-25: updated from the stale 2024 release citation to the release the dataset is built on; URL points at the release notes since the docs site's /release/ paths 404.)
 
 28. **`panerai2004urban`** — Panerai, Castex, Depaule & Samuels (2004), *Urban Forms: The Death and Life of the Urban Block* (Architectural Press). The canonical account of the continuous/closed perimeter block (îlot) as the characteristic 19th-c. European fabric and its modernist dissolution. *Used* (L160) for exactly that claim. ✅ **Added this round** to correctly attribute the perimeter-block thesis (previously mis-cited to Caniggia & Maffei).
 
@@ -130,7 +130,7 @@ A reference-by-reference record for both papers: the **gist** of each cited work
 
 35. **`tsenkova2006urban`** — Tsenkova & Nedović-Budić (eds., 2006), *The Urban Mosaic of Post-Socialist Europe*. Diversity of post-socialist planning/institutional responses. *Used* (L261) for the Poland–Romania divergence. ✅ adequate (a broad volume, not a dedicated Poland–Romania comparison).
 
-36. **`whitehand2001british`** — Whitehand (2001), *Urban Morphology* 5(1). The British/Conzenian town-plan analysis tradition. *Used* (L58) as a foundational tradition. ✅
+36. **`whitehand2001british`** — Whitehand (2001), *Urban Morphology* 5(2), 103–109. The British/Conzenian town-plan analysis tradition. *Used* (L58) as a foundational tradition. ✅
 
 37. **`vanderhaegen2017mapping`** — Vanderhaegen & Canters (2017), *Landscape Urban Plan.* 167. Mapping urban form/function from building data. *Used* (L88) for the facade-continuity measurement concept. ✅
 
@@ -165,3 +165,30 @@ Other reference changes this round:
 
 ## What this audit does not cover
 Figure-visual descriptions (e.g. continental scanline gradients) were confirmed against the regenerated macros and, for Plate 9, by inspecting the rendered figure — but the audit does not re-derive every plate. Historical claims rest on the cited literature (verified to exist and, for the load-bearing claims, checked for substantive support).
+
+## Full contextual audit, 2026-08-26
+
+Three-agent audit of all 68 entries across both papers: metadata re-verified
+against Crossref/DataCite/publisher records, and every citation site checked
+for appropriate use. No hallucinated entries found. Corrections applied:
+
+- `ballantyne2024overture` (atlas): the registry-undercount claim was
+  misattributed to this paper (its supermarket counts align within 5%; its
+  documented weakness is attribute incompleteness). Sentence rewritten; the
+  registry undercount is now cited to the companion paper's own validation.
+- `panerai2004urban`: publication place corrected London -> Oxford.
+- `moudon1997urban` recited as the long-standing call for integration rather
+  than "recent work"; `talen2012city` moved to the regulation-shapes-form
+  claim; `dibble2019origin` claim reworded (morphometric profiles, not
+  orientation regularity); `berghauser2019systematic` claim softened and
+  co-cited with `fleischmann2022morphological`; Spacematrix FSI threshold
+  wording softened to "broadly corresponding"; antiparochi sentence trimmed
+  to Athens (Thessaloniki not verifiable in Maloutas 2003).
+- `minghini2024` (data paper): "reference building data" -> "other open
+  building datasets" (the paper compares open datasets, none authoritative).
+- `angel2016atlas`: Galarza Sanchez spelling (accent, no hyphen) and
+  co-publishers added; `boeing2020multi` subtitle and issue restored.
+- DOIs added to 15 atlas entries that lacked them (all verified individually);
+  `tsenkova2006urban` diacritics restored.
+- `openshaw1984` URL (qmrg.org.uk) unreachable (HTTP 521) during the audit;
+  re-check before camera-ready.

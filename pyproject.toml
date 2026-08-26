@@ -1,6 +1,6 @@
 [project]
 name = "t2esoareu"
-version = "1.2.0"
+version = "2.0.0"
 description = "SOAR-EU: Scalable Open Automatable Reproducible pedestrian-scale urban metrics for 626 European urban centres"
 readme = "README.md"
 requires-python = ">=3.12, <3.14"
@@ -13,7 +13,7 @@ dependencies = [
   "shapely>=2.1.1",
   "tqdm>=4.65.0",
   "pyproj>=3.6.1",
-  "cityseer>=4.25.0b9",
+  "cityseer>=5.8.0",
   "rasterio>=1.4.3",
   "momepy>=0.10.0",
   "matplotlib>=3.8.0",

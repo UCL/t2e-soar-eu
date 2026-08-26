@@ -170,8 +170,6 @@ def build_figure(inequality):
 
     # ── Draw donuts ────────────────────────────────────────────────
     ROW_STEP = 0.95  # row spacing between service rows
-    # Fixed label baseline: bottom of the tallest possible donut in any row
-    _dist_to_r(1200)  # theoretical max
     LABEL_OFFSET = ROW_STEP * 0.36  # fixed distance below row centre for labels
 
     for si, svc in enumerate(INEQ_SERVICES):

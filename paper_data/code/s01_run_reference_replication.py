@@ -40,6 +40,7 @@ from pointa_utils import (
 )
 
 from src.landuse_categories import merge_landuse_categories
+from src.processing.processors import DECAYS, _restore_column_order
 
 
 def main() -> int:
@@ -105,12 +106,14 @@ def main() -> int:
         if not overture_places.empty:
             keys = sorted(overture_places["merged_cats"].dropna().unique().tolist())
             if keys:
-                cn.compute_accessibilities(
+                cn = cn.compute_accessibilities(
                     overture_places,
                     landuse_column_label="merged_cats",
                     accessibility_keys=keys,
                     distances=DISTANCES_LU,
+                    decay_fn=DECAYS,
                 )
+                _restore_column_order(cn.nodes_gdf)
         nodes_ovt = cn.to_geopandas().copy(deep=True)
         nodes_ovt["bounds_fid"] = fid_str
         nodes_ovt["node_id"] = nodes_ovt.index.astype(str)
@@ -164,12 +167,14 @@ def main() -> int:
         if not registry_places.empty:
             keys = sorted(registry_places["merged_cats"].dropna().unique().tolist())
             if keys:
-                cn.compute_accessibilities(
+                cn = cn.compute_accessibilities(
                     registry_places,
                     landuse_column_label="merged_cats",
                     accessibility_keys=keys,
                     distances=DISTANCES_LU,
+                    decay_fn=DECAYS,
                 )
+                _restore_column_order(cn.nodes_gdf)
         nodes_reg = cn.to_geopandas()
         nodes_reg["bounds_fid"] = fid_str
         nodes_reg["node_id"] = nodes_reg.index.astype(str)
@@ -203,6 +208,12 @@ def main() -> int:
     if poi_count_rows:
         poi_counts_csv = out_dir / "pointa_poi_counts.csv"
         poi_df = pd.DataFrame(poi_count_rows)
+        if poi_counts_csv.exists():
+            # Resumed run: cities skipped via existing parquets have no new rows,
+            # so merge with the existing CSV, preferring newly computed rows.
+            prev_df = pd.read_csv(poi_counts_csv, dtype={"bounds_fid": str})
+            poi_df = pd.concat([poi_df, prev_df], ignore_index=True)
+            poi_df = poi_df.drop_duplicates(subset=["bounds_fid", "category"], keep="first")
         poi_df.to_csv(poi_counts_csv, index=False)
         print(f"✓ Wrote POI counts: {poi_counts_csv} ({len(poi_df)} rows)")
         # Flag suspicious cities.

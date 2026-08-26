@@ -1,9 +1,10 @@
 """Extract key numbers for the atlas manuscript prose.
 
-Computes all statistics needed for plates 1-10 text: axis correlations,
-octant segment shares, service distances by octant, desert fractions,
-P25/P75 inequality gaps, density quintile form gaps, and paired
-comparison raw values.
+Cross-check console tool: axis correlations, octant segment shares,
+building morphometrics (Plate 4), service distances (Plate 5), desert
+fractions (Plate 6), P25-P75 unevenness (Plate 7), demographics
+(Plate 8), paired comparisons (Plate 10), and density quintile form
+gaps (Plate 11).
 """
 
 import sys
@@ -31,21 +32,20 @@ SVC_COLS = {
     "religious": "cc_religious_nearest_max_1600",
 }
 
-# ── Morphometric columns ──
+# ── Morphometric columns (400 m contextual medians, as cached) ──
 MORPH_COLS = {
     "height": "cc_mean_height_median_400_wt",
-    "volume": "cc_mean_volume_median_200_wt",
-    "area": "cc_mean_area_median_200_wt",
-    "perimeter": "cc_mean_perimeter_median_200_wt",
-    "compactness": "cc_mean_compactness_median_200_wt",
-    "corners": "cc_mean_corners_median_200_wt",
-    "shared_wall": "cc_shared_wall_length_median_400_wt",
+    "volume": "cc_volume_median_400_wt",
+    "area": "cc_area_median_400_wt",
+    "perimeter": "cc_perimeter_median_400_wt",
+    "compactness": "cc_compactness_median_400_wt",
+    "corners": "cc_corners_median_400_wt",
     "swr": "cc_shared_wall_ratio_median_400_wt",
     "frontage": "frontage_max",
     "gsi": "cc_block_covered_ratio_median_400_wt",
     "fsi": "cc_block_far_median_400_wt",
     "osr": "cc_block_osr_median_400_wt",
-    "mean_floors": "cc_block_mean_height_median_400_wt",
+    "mean_floors": "cc_block_l_median_400_wt",
 }
 
 DEMO_COLS = {
@@ -99,7 +99,7 @@ def main():
     # PLATE 3: Building morphometrics by octant
     # ═══════════════════════════════════════════════════════════════════
     print("\n" + "=" * 70)
-    print("PLATE 3 — BUILDINGS")
+    print("PLATE 4 — BUILDINGS")
     print("=" * 70)
 
     for name, col in MORPH_COLS.items():
@@ -113,8 +113,8 @@ def main():
             print(f"    {o}: {v:.2f}")
 
     # Compactness CV
-    if "cc_mean_compactness_median_200_wt" in classified.columns:
-        city_compact = classified.groupby("bounds_fid")["cc_mean_compactness_median_200_wt"].median()
+    if "cc_compactness_median_400_wt" in classified.columns:
+        city_compact = classified.groupby("bounds_fid")["cc_compactness_median_400_wt"].median()
         cv = city_compact.std() / city_compact.mean()
         print(f"\n  Compactness CV across cities: {cv:.4f}")
 
@@ -122,7 +122,7 @@ def main():
     # PLATE 4: Service distances by octant + overall
     # ═══════════════════════════════════════════════════════════════════
     print("\n" + "=" * 70)
-    print("PLATE 4 — ACCESS")
+    print("PLATE 5 — ACCESS")
     print("=" * 70)
 
     # City-level medians
@@ -153,7 +153,7 @@ def main():
     # PLATE 5: Demographics by octant
     # ═══════════════════════════════════════════════════════════════════
     print("\n" + "=" * 70)
-    print("PLATE 5 — DEMOGRAPHICS")
+    print("PLATE 8 — DEMOGRAPHICS")
     print("=" * 70)
 
     for name, col in DEMO_COLS.items():
@@ -170,7 +170,7 @@ def main():
     # PLATE 6: Null correlation (green vs retail)
     # ═══════════════════════════════════════════════════════════════════
     print("\n" + "=" * 70)
-    print("PLATE 6 / DISCUSSION — NULL CORRELATION")
+    print("GREEN VS RETAIL — NULL CORRELATION (discussion)")
     print("=" * 70)
 
     retail_col = SVC_COLS["retail"]
@@ -179,7 +179,8 @@ def main():
     if retail_col in city_meds.columns and green_col in city_meds.columns:
         from scipy.stats import pearsonr
 
-        r_green, p_green = pearsonr(city_meds[retail_col].dropna(), city_meds[green_col].dropna())
+        valid_g = city_meds[[retail_col, green_col]].dropna()
+        r_green, p_green = pearsonr(valid_g[retail_col], valid_g[green_col])
         print(f"  Retail vs Green (city medians): r={r_green:.3f} (p={p_green:.3f})")
     if retail_col in city_meds.columns and trees_col in city_meds.columns:
         valid = city_meds[[retail_col, trees_col]].dropna()
@@ -197,7 +198,7 @@ def main():
     # PLATE 8: Density quintile form gaps
     # ═══════════════════════════════════════════════════════════════════
     print("\n" + "=" * 70)
-    print("PLATE 8 — SAME DENSITY, DIFFERENT CITY")
+    print("PLATE 11 — DENSITY QUINTILE FORM GAPS")
     print("=" * 70)
 
     dens_col = DEMO_COLS["density"]
@@ -235,7 +236,7 @@ def main():
     # PLATE 9: Desert fractions
     # ═══════════════════════════════════════════════════════════════════
     print("\n" + "=" * 70)
-    print("PLATE 9 — SERVICE DESERT")
+    print("PLATE 6 — SERVICE DESERT")
     print("=" * 70)
 
     DESERT_THRESHOLD = 400
@@ -255,7 +256,7 @@ def main():
     # PLATE 10: P25-P75 inequality gaps
     # ═══════════════════════════════════════════════════════════════════
     print("\n" + "=" * 70)
-    print("PLATE 10 — INEQUALITY")
+    print("PLATE 7 — UNEVENNESS (P25-P75)")
     print("=" * 70)
 
     for name, col in SVC_COLS.items():
@@ -275,7 +276,7 @@ def main():
     # PLATE 7: Paired comparison raw values
     # ═══════════════════════════════════════════════════════════════════
     print("\n" + "=" * 70)
-    print("PLATE 7 — COMPARISONS (raw city medians)")
+    print("PLATE 10 — COMPARISONS (raw city medians)")
     print("=" * 70)
 
     import geopandas as gpd
@@ -295,7 +296,12 @@ def main():
     # Key comparisons
     comparisons = [
         ("Nordic", {"country": ["Norway", "Finland"]}, "Mediterranean", {"country": ["Spain", "Greece"]}),
-        ("Netherlands", {"cities": ["Amsterdam", "Utrecht"]}, "Belgium", {"cities": ["Brussels", "Ghent"]}),
+        (
+            "Netherlands",
+            {"cities": ["Amsterdam", "Utrecht", "Rotterdam [The Hague]"]},
+            "Belgium",
+            {"cities": ["Brussels", "Ghent", "Antwerp"]},
+        ),
         ("Poland", {"country": ["Poland"]}, "Romania", {"country": ["Romania"]}),
         (
             "Northern Italy",

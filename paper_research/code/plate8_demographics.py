@@ -66,7 +66,6 @@ def main():
 
     for ri, ag in enumerate(DEMOGRAPHIC_ROWS):
         col = ag["col"]
-        ag["color"]
         use_log = ag.get("log", False)
 
         # Global stats
@@ -80,15 +79,6 @@ def main():
             global_max = 1
         eu_median = np.nanmedian(all_vals)
         med_r = eu_median / global_max
-
-        # EU reference sorted sample
-        eu_sample = rng.choice(all_vals, min(MAX_SAMPLE, len(all_vals)), replace=False)
-        eu_sorted = np.sort(eu_sample)
-        eu_radii = eu_sorted / global_max
-        eu_n = len(eu_radii)
-        eu_angles = np.linspace(0, 2 * np.pi, eu_n, endpoint=False)
-        np.append(eu_angles, eu_angles[0])
-        np.append(eu_radii, eu_radii[0])
 
         for ci, octant in enumerate(OCTANT_ORDER):
             ax = axes[ri, ci]
@@ -105,6 +95,9 @@ def main():
                 ax.set_visible(False)
                 continue
 
+            # full-data median for the printed label; the subsample below is
+            # only a rendering optimisation and must not shift the number
+            full_median = np.nanmedian(oct_vals)
             if len(oct_vals) > MAX_SAMPLE:
                 oct_vals = rng.choice(oct_vals, MAX_SAMPLE, replace=False)
 
@@ -131,8 +124,8 @@ def main():
             radii_closed = np.append(radii, radii[0])
             ax.plot(angles_closed, radii_closed, color=oc, lw=0.6, alpha=0.8)
 
-            # Octant median value — below the plot
-            oct_median = np.nanmedian(vals_sorted)
+            # Octant median value — below the plot (full data, not the subsample)
+            oct_median = full_median
             if use_log:
                 # Convert back from log for display
                 oct_median = np.expm1(oct_median)

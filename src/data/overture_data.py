@@ -39,9 +39,10 @@ def load_network(
     edges_gdf.rename(columns={"geometry": "geom"}, inplace=True)
     edges_gdf.set_geometry("geom", inplace=True)
     edges_gdf.drop(columns=["bbox"], inplace=True)
-    edges_gdf = tools.remove_overlapping_edges(edges_gdf)  # type: ignore
     # CLEAN
+    # filter to roads before overlap removal so a road is never dropped in favour of a non-road edge
     edges_gdf = edges_gdf[edges_gdf["subtype"] == "road"]  # type: ignore
+    edges_gdf = tools.remove_overlapping_edges(edges_gdf)  # type: ignore
     multigraph = tools.generate_graph(
         nodes_gdf=nodes_gdf,  # type: ignore
         edges_gdf=edges_gdf,  # type: ignore

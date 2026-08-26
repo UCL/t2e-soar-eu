@@ -96,11 +96,8 @@ def load_data():
 
     df = df.merge(bounds[["bounds_fid", "label", "country"]], on="bounds_fid")
 
-    # Continuity uses max(left, right)
-    if "frontage_left" in df.columns and "frontage_right" in df.columns:
-        df["_fr_max"] = df[["frontage_left", "frontage_right"]].max(axis=1)
-    else:
-        df["_fr_max"] = df[AXIS_COLS["continuity"]]
+    # Continuity uses max(left, right), precomputed as frontage_max in the cache
+    df["_fr_max"] = df[AXIS_COLS["continuity"]]
 
     axis_cols = [AXIS_COLS["intensity"], "_fr_max", AXIS_COLS["irregularity"]]
     city_n = df.groupby("bounds_fid").size().rename("n_seg")
@@ -200,7 +197,6 @@ def build_ripple_plate(city_meds, europe):
 
     # Ripple parameters
     ripple_scale = 1.5
-    _lw_min, _lw_max = 0.3, 0.65
     _alpha_min, alpha_max = 0.0, 0.9
 
     city_meds["eff_radius"] = np.sqrt(city_meds["area_m2"] / np.pi)

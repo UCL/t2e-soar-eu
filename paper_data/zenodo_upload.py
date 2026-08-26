@@ -6,19 +6,19 @@ Reads ZENODO_RECORD_ID from .env (or pass --record-id).
 
 Usage:
     # Dry run — shows what would be uploaded
-    uv run python scripts/zenodo_upload.py --dry-run
+    uv run python paper_data/zenodo_upload.py --dry-run
 
     # Bundle city files by country into zips (Zenodo 100-file limit)
-    uv run python scripts/zenodo_upload.py --bundle
+    uv run python paper_data/zenodo_upload.py --bundle
 
     # Upload metadata only (no files)
-    uv run python scripts/zenodo_upload.py --metadata-only
+    uv run python paper_data/zenodo_upload.py --metadata-only
 
     # Resume an interrupted upload (skips already-completed files)
-    uv run python scripts/zenodo_upload.py --bundle --resume
+    uv run python paper_data/zenodo_upload.py --bundle --resume
 
     # Remove all existing files and re-upload
-    uv run python scripts/zenodo_upload.py --bundle --replace
+    uv run python paper_data/zenodo_upload.py --bundle --replace
 """
 
 from __future__ import annotations
@@ -63,7 +63,7 @@ METADATA = {
         "enabled": True,
     },
     "metadata": {
-        "title": ("SOAR-EU: Scalable, Open, Automatable, and Reproducible European Urban Dataset"),
+        "title": ("SOAR-EU: A Scalable, Open, Automatable, and Reproducible European Urban Dataset"),
         "description": (
             "<p>SOAR-EU provides pre-computed pedestrian-scale urban metrics "
             "for 626 European cities. It delivers over 100 pre-computed "
@@ -116,11 +116,11 @@ METADATA = {
             "<h4>Processing</h4>"
             "<p>Processing pipeline: "
             "<a href='https://github.com/UCL/t2e-soar-eu'>github.com/UCL/t2e-soar-eu</a> "
-            "(AGPL-3.0, v1.3.0). CRS: EPSG:3035 (ETRS89-LAEA Europe).</p>"
+            "(AGPL-3.0, v2.0.0). CRS: EPSG:3035 (ETRS89-LAEA Europe).</p>"
             "<p>Funded by the European Union's Horizon Europe Research and "
             "Innovation Programme under Grant Agreement No. 101078890.</p>"
         ),
-        "version": "1.3.0",
+        "version": "2.0.0",
         "publication_date": "2026-07-17",
         "resource_type": {"id": "dataset"},
         "creators": [
@@ -192,7 +192,7 @@ METADATA = {
         "code:programmingLanguage": {"id": "python"},
         "code:developmentStatus": {"id": "active"},
         "code:runtimePlatform": "Python 3.12",
-        "code:version": "v1.3.0",
+        "code:version": "v2.0.0",
     },
 }
 
@@ -202,14 +202,14 @@ METADATA = {
 # ---------------------------------------------------------------------------
 
 
-def get_auth() -> tuple[str, str]:
-    """Return (token, record_id) from env."""
+def get_auth(record_id_override: str | None = None) -> tuple[str, str]:
+    """Return (token, record_id) from env, honouring a --record-id override."""
     token = os.environ.get("ZENODO_TOKEN", "")
-    record_id = os.environ.get("ZENODO_RECORD_ID", "")
+    record_id = record_id_override or os.environ.get("ZENODO_RECORD_ID", "")
     if not token:
         sys.exit("Error: ZENODO_TOKEN not set in .env")
     if not record_id:
-        sys.exit("Error: ZENODO_RECORD_ID not set in .env")
+        sys.exit("Error: ZENODO_RECORD_ID not set in .env (or pass --record-id)")
     return token, record_id
 
 
@@ -239,8 +239,16 @@ def _request_with_retry(
     backoff: float = 5.0,
     **kwargs,
 ) -> requests.Response:
-    """Make an HTTP request with retry on 5xx / connection errors."""
+    """Make an HTTP request with retry on 5xx / connection errors.
+
+    Seekable request bodies (open file handles) are rewound before every
+    attempt: without this, a retried streamed PUT re-sends from the file's
+    current position and silently uploads a truncated body.
+    """
     for attempt in range(max_retries):
+        body = kwargs.get("data")
+        if body is not None and hasattr(body, "seek"):
+            body.seek(0)
         try:
             r = requests.request(method, url, **kwargs)
             if r.status_code < 500:
@@ -345,13 +353,18 @@ def upload_file(
     speed = size_mb / elapsed if elapsed > 0 else 0
     print(f" done ({elapsed:.0f}s, {speed:.1f} MB/s)")
 
-    # Step 3: Commit
+    # Step 3: Commit, then verify the remote size matches the local file
     r = _request_with_retry(
         "POST",
         f"{ZENODO_API}/records/{record_id}/draft/files/{remote_name}/commit",
         headers=hdrs,
     )
     r.raise_for_status()
+    remote_size = r.json().get("size")
+    if remote_size is not None and remote_size != file_size:
+        raise requests.HTTPError(
+            f"Size mismatch after commit for {remote_name}: remote {remote_size} != local {file_size}"
+        )
     return True
 
 
@@ -409,9 +422,14 @@ def bundle_by_country(output_dir: Path) -> list[Path]:
     for country, files in sorted(country_files.items()):
         bundle_path = output_dir / f"soar_eu_{country}.zip"
         if bundle_path.exists():
-            print(f"  Bundle exists, skipping: {bundle_path.name}")
-            bundles.append(bundle_path)
-            continue
+            # a bundle is stale if any source city file is newer than it
+            bundle_mtime = bundle_path.stat().st_mtime
+            if all(f.stat().st_mtime <= bundle_mtime for f in files):
+                print(f"  Bundle up to date, skipping: {bundle_path.name}")
+                bundles.append(bundle_path)
+                continue
+            print(f"  Bundle stale, rebuilding: {bundle_path.name}")
+            bundle_path.unlink()
 
         print(
             f"  Bundling {country}: {len(files)} cities...",
@@ -478,9 +496,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    token, record_id = get_auth()
-    if args.record_id:
-        record_id = args.record_id
+    token, record_id = get_auth(args.record_id)
 
     # --- Metadata ---
     if not args.dry_run:
@@ -514,6 +530,9 @@ def main(argv: list[str] | None = None) -> int:
                 safe = c.replace(" ", "_").replace("/", "_")
                 n = sum(1 for v in fid_to_country.values() if v == c)
                 print(f"    soar_eu_{safe}.zip ({n} cities)")
+            # include bundles already on disk in the printed upload plan
+            for b in sorted(args.bundle_dir.glob("soar_eu_*.zip")):
+                upload_list.append((b, b.name))
         else:
             bundles = bundle_by_country(args.bundle_dir)
             for b in bundles:

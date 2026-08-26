@@ -44,7 +44,6 @@ apply_atlas_style()
 
 C_THRESH = 0.75
 FSI_THRESHOLD = 1.0
-CROSSOVER = 0.66  # density crossover: where high-FSI overtakes low-FSI
 
 # ── Load data ────────────────────────────────────────────────────────
 print("Loading data …")
@@ -184,6 +183,13 @@ centers = (bins[:-1] + bins[1:]) / 2
 interior_max = max(hist_low[2:].max(), hist_high[2:].max())
 y_max_clip = interior_max * 1.15
 
+# Density crossover, derived from the histograms: the bin edge after the
+# last interior bin where the low-FSI density still exceeds the high-FSI
+# density (zero spike excluded); high-FSI dominates beyond this point.
+_below = np.flatnonzero(hist_high[2:] < hist_low[2:])
+CROSSOVER = float(bins[2:][_below[-1] + 1]) if len(_below) else float(bins[2])
+print(f"  density crossover: {CROSSOVER:.2f}")
+
 # Draw low-intensity first (behind), then high-intensity (in front)
 ax_b.fill_between(
     centers, 0, hist_low,
@@ -221,11 +227,11 @@ ax_b.text(
     fontsize=5.5, color=DARK, va="top", ha="left",
 )
 
-# Density crossover (~0.66) — dotted grey
+# Density crossover (derived above) — dotted grey
 ax_b.axvline(CROSSOVER, color=GREY, ls=":", lw=0.7, alpha=0.75, zorder=6)
 ax_b.text(
     CROSSOVER - 0.008, y_max_clip * 0.96,
-    f"crossover $\\approx$ {CROSSOVER}",
+    f"crossover $\\approx$ {CROSSOVER:.2f}",
     fontsize=5.5, color=GREY, va="top", ha="right",
 )
 

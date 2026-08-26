@@ -138,6 +138,12 @@ def split_street_segment(
             node_segment_lots.append((cast(geometry.LineString, line_string_a), new_connectors))
             node_segment_lots.append((cast(geometry.LineString, line_string_b), new_connectors))
             break
+        else:
+            # no split possible and not exactly two connectors: piece is dropped
+            logger.debug(
+                f"Dropping street segment piece with {len(new_connectors)} usable connectors: "
+                f"{[_fid for _fid, _ in new_connectors]}"
+            )
     return node_segment_pairs
 
 

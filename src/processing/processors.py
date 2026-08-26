@@ -1,5 +1,6 @@
 """ """
 
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -8,6 +9,7 @@ import momepy
 import numpy as np
 import pandas as pd
 import rasterio
+from cityseer import decay
 from cityseer.network import CityNetwork
 from rasterio.mask import mask
 from shapely import STRtree
@@ -25,11 +27,49 @@ DISTANCES_MORPH = [200, 400]
 DISTANCES_GREEN_REACH = [1600]
 DISTANCES_GREEN_AGG = [200, 400, 800]
 
+# Decay variants reproducing the published _nw / _wt column pairs:
+# flat = unweighted counts/stats, exponential (steepness 4) = the historical
+# distance-weighted variant (weight = exp(-4 d / d_max)).
+DECAYS = {"nw": decay.flat(), "wt": decay.exponential()}
+
+_COL_ORDER_RE = re.compile(r"^(cc_.+)_(nw|wt)_(\d+)$")
+
+
+def _restore_column_order(nodes_gdf: gpd.GeoDataFrame) -> None:
+    """Rename cc_*_{label}_{dist} columns to the published cc_*_{dist}_{label} order.
+
+    cityseer 5.x suffixes decay labels before the distance; the deposited
+    dataset and the S1 schema use distance-then-label, so outputs are renamed
+    in place immediately after each compute call.
+    """
+    renames = {}
+    for col in nodes_gdf.columns:
+        m = _COL_ORDER_RE.match(col)
+        if m:
+            renames[col] = f"{m.group(1)}_{m.group(3)}_{m.group(2)}"
+    if renames:
+        nodes_gdf.rename(columns=renames, inplace=True)
+
 
 def process_centrality(cn: CityNetwork) -> CityNetwork:
     """ """
     logger.info("Computing centrality")
-    cn = cn.centrality_shortest(distances=DISTANCES_CENT)
+    # Expression dicts reproduce the full published centrality set
+    cn = cn.centrality_shortest(
+        distances=DISTANCES_CENT,
+        closeness={
+            "density": "1",
+            "farness": "c",
+            "harmonic": "1/c",
+            "beta": "exp(-4 * p)",
+        },
+        betweenness={
+            "betweenness": "1",
+            "betweenness_beta": "exp(-4 * p)",
+        },
+        cycles=True,
+        postprocess={"hillier": "density**2 / farness"},
+    )
     return cn
 
 
@@ -38,20 +78,23 @@ def process_places(cn: CityNetwork, places_gdf: gpd.GeoDataFrame, infrast_gdf: g
     logger.info("Computing places")
     # apply standardized category merging
     places_gdf = landuse_categories.merge_landuse_categories(places_gdf)
-    # landuses
-    landuse_keys = places_gdf["merged_cats"].unique().tolist()
+    # landuses — fixed list so every city carries an identical column schema
+    landuse_keys = list(landuse_categories.COMMON_LANDUSE_CATEGORIES)
     # compute accessibilities
-    cn, places_gdf = cn.compute_accessibilities(
+    cn = cn.compute_accessibilities(
         places_gdf,  # type: ignore
         landuse_column_label="merged_cats",
         accessibility_keys=landuse_keys,
         distances=DISTANCES_LU,
+        decay_fn=DECAYS,
     )
-    cn, places_gdf = cn.compute_mixed_uses(
+    cn = cn.compute_mixed_uses(
         places_gdf,
         landuse_column_label="merged_cats",
         distances=DISTANCES_LU,
+        decay_fn=DECAYS,
     )
+    _restore_column_order(cn.nodes_gdf)
     # infrastructure
     street_furn_keys = [
         "bench",
@@ -86,12 +129,14 @@ def process_places(cn: CityNetwork, places_gdf: gpd.GeoDataFrame, infrast_gdf: g
     landuse_keys = ["street_furn", "parking", "transport"]
     infrast_gdf = infrast_gdf[infrast_gdf["class"].isin(landuse_keys)]  # type: ignore
     # compute accessibilities
-    cn, infrast_gdf = cn.compute_accessibilities(
+    cn = cn.compute_accessibilities(
         infrast_gdf,  # type: ignore
         landuse_column_label="class",
         accessibility_keys=landuse_keys,
         distances=DISTANCES_LU,
+        decay_fn=DECAYS,
     )
+    _restore_column_order(cn.nodes_gdf)
     return cn
 
 
@@ -116,6 +161,8 @@ def process_blocks_buildings(
         "shared_walls",
         "shared_wall_ratio",
         "fractal_dimension",
+        "mean_height",
+        "floor_area",
     ]:
         bldgs_gdf[col_key] = np.nan
     if not bldgs_gdf.empty:
@@ -196,11 +243,13 @@ def process_blocks_buildings(
         "shared_wall_ratio",
         "fractal_dimension",
     ]
-    cn, bldgs_gdf = cn.compute_stats(
+    cn = cn.compute_stats(
         data_gdf=bldgs_gdf,
         stats_column_labels=bldg_stats_cols,
         distances=DISTANCES_MORPH,
+        decay_fn=DECAYS,
     )
+    _restore_column_order(cn.nodes_gdf)
     # Keep median + MAD for all; also keep sum for area and volume
     keep_sum = {"area", "volume"}
     nodes_gdf = cn.nodes_gdf
@@ -217,13 +266,34 @@ def process_blocks_buildings(
                     trim_columns.append(column_name)
         nodes_gdf.drop(columns=trim_columns, inplace=True)
     bldgs_gdf["type"] = "building"  # for downstream use
-    cn, bldgs_gdf = cn.compute_accessibilities(
+    cn = cn.compute_accessibilities(
         bldgs_gdf,  # type: ignore
         landuse_column_label="type",
         accessibility_keys=["building"],
         distances=DISTANCES_MORPH,
+        decay_fn=DECAYS,
     )
+    _restore_column_order(cn.nodes_gdf)
     cn.nodes_gdf.drop(columns=[f"cc_building_nearest_max_{max(DISTANCES_MORPH)}"], inplace=True)
+    cn, blocks_gdf = process_blocks(cn, bldgs_gdf, blocks_gdf)
+    # reset geometry
+    bldgs_gdf.set_geometry("geometry", inplace=True)
+    bldgs_gdf.drop(columns=["centroid"], inplace=True)
+
+    return cn, bldgs_gdf, blocks_gdf
+
+
+def process_blocks(
+    cn: CityNetwork,
+    bldgs_gdf: gpd.GeoDataFrame,
+    blocks_gdf: gpd.GeoDataFrame,
+) -> tuple[CityNetwork, gpd.GeoDataFrame]:
+    """Compute block metrics and their street-level aggregations.
+
+    ``bldgs_gdf`` must carry ``area``, ``floor_area``, and ``mean_height``
+    columns and have its centroid as the active geometry: buildings are
+    assigned to blocks by centroid intersection.
+    """
     # placeholders
     for col_key in [
         "block_area",
@@ -268,16 +338,18 @@ def process_blocks_buildings(
         # min_count=1 ensures blocks where all buildings lack height data get NaN (not 0)
         building_floor_area_per_block = merged_gdf.groupby("uID")["floor_area"].sum(min_count=1)
         blocks_gdf["block_far"] = building_floor_area_per_block / blocks_gdf["block_area"]
-        blocks_gdf["block_far"] = blocks_gdf["block_far"].fillna(0)
         # Spacematrix derived: OSR = (1 - GSI) / FSI, L = FSI / GSI
         gsi = blocks_gdf["block_covered_ratio"]
         fsi = blocks_gdf["block_far"]
         blocks_gdf["block_osr"] = np.where(fsi > 0, (1 - gsi) / fsi, np.nan)
         blocks_gdf["block_l"] = np.where(gsi > 0, fsi / gsi, np.nan)
         # Block mean height: area-weighted mean building height
+        # denominator restricted to height-valid buildings so partial raster coverage doesn't bias low
         merged_gdf["_weighted_ht"] = merged_gdf["mean_height"] * merged_gdf["area"]
+        merged_gdf["_ht_area"] = merged_gdf["area"].where(merged_gdf["mean_height"].notna())
         weighted_ht_sum = merged_gdf.groupby("uID")["_weighted_ht"].sum(min_count=1)
-        blocks_gdf["block_mean_height"] = weighted_ht_sum / building_area_per_block
+        ht_valid_area_per_block = merged_gdf.groupby("uID")["_ht_area"].sum(min_count=1)
+        blocks_gdf["block_mean_height"] = weighted_ht_sum / ht_valid_area_per_block
         # NaN out all Spacematrix metrics for sparse blocks
         spacematrix_cols = ["block_covered_ratio", "block_far", "block_osr", "block_l", "block_mean_height"]
         blocks_gdf.loc[sparse_mask, spacematrix_cols] = np.nan
@@ -295,11 +367,13 @@ def process_blocks_buildings(
         "block_l",
         "block_mean_height",
     ]
-    cn, blocks_gdf = cn.compute_stats(
+    cn = cn.compute_stats(
         data_gdf=blocks_gdf,
         stats_column_labels=block_stats_cols,
         distances=DISTANCES_MORPH,
+        decay_fn=DECAYS,
     )
+    _restore_column_order(cn.nodes_gdf)
     # Keep median + MAD for all; also keep sum for block_area
     block_keep_sum = {"block_area"}
     nodes_gdf = cn.nodes_gdf
@@ -316,32 +390,24 @@ def process_blocks_buildings(
                     trim_columns.append(column_name)
         nodes_gdf.drop(columns=trim_columns, inplace=True)
     blocks_gdf["type"] = "block"  # for downstream use
-    cn, blocks_gdf = cn.compute_accessibilities(
+    cn = cn.compute_accessibilities(
         blocks_gdf,  # type: ignore
         landuse_column_label="type",
         accessibility_keys=["block"],
         distances=DISTANCES_MORPH,
+        decay_fn=DECAYS,
     )
+    _restore_column_order(cn.nodes_gdf)
     cn.nodes_gdf.drop(columns=[f"cc_block_nearest_max_{max(DISTANCES_MORPH)}"], inplace=True)
     # reset geometry
-    bldgs_gdf.set_geometry("geometry", inplace=True)
-    bldgs_gdf.drop(columns=["centroid"], inplace=True)
     blocks_gdf.set_geometry("geometry", inplace=True)
     blocks_gdf.drop(columns=["centroid"], inplace=True)
 
-    return cn, bldgs_gdf, blocks_gdf
+    return cn, blocks_gdf
 
 
-def process_green(cn: CityNetwork, green_gdf: gpd.GeoDataFrame, trees_gdf: gpd.GeoDataFrame) -> CityNetwork:
-    """ """
-    # Intentionally using points for handling extra large features like rivers
-    logger.info("Computing green")
-    # check Polygons
-    green_gdf = green_gdf.explode(index_parts=False)  # type: ignore
-    green_gdf.reset_index(drop=True, inplace=True)
-    # check Polygons
-    trees_gdf = trees_gdf.explode(index_parts=False)  # type: ignore
-    trees_gdf.reset_index(drop=True, inplace=True)
+def _extract_green_points(green_gdf: gpd.GeoDataFrame, trees_gdf: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+    """Extract boundary points from exploded green / trees polygons."""
 
     # function for extracting points
     def generate_points(fid, categ, polygon, area, interval=20, simplify=20):
@@ -354,15 +420,17 @@ def process_green(cn: CityNetwork, green_gdf: gpd.GeoDataFrame, trees_gdf: gpd.G
         ]
 
     # extract points
+    # fids are namespaced per category: cityseer deduplicates by data_id globally,
+    # so a shared RangeIndex would let a nearer tree point mask a green polygon
     points = []
     # for green
     for fid, geom in zip(green_gdf.index, green_gdf.geometry, strict=True):  # type: ignore
         if geom.geom_type == "Polygon":
-            points.extend(generate_points(fid, "green", geom, geom.area, interval=20, simplify=10))
+            points.extend(generate_points(f"green_{fid}", "green", geom, geom.area, interval=20, simplify=10))
     # for trees
     for fid, geom in zip(trees_gdf.index, trees_gdf.geometry, strict=True):  # type: ignore
         if geom.geom_type == "Polygon":
-            points.extend(generate_points(fid, "trees", geom, geom.area, interval=20, simplify=5))
+            points.extend(generate_points(f"trees_{fid}", "trees", geom, geom.area, interval=20, simplify=5))
     # create GDF
     points_gdf = gpd.GeoDataFrame(  # type: ignore
         points,
@@ -371,6 +439,20 @@ def process_green(cn: CityNetwork, green_gdf: gpd.GeoDataFrame, trees_gdf: gpd.G
         crs=trees_gdf.crs,  # type: ignore
     )
     points_gdf.index = points_gdf.index.astype(str)
+    return points_gdf
+
+
+def process_green(cn: CityNetwork, green_gdf: gpd.GeoDataFrame, trees_gdf: gpd.GeoDataFrame) -> CityNetwork:
+    """ """
+    # Intentionally using points for handling extra large features like rivers
+    logger.info("Computing green")
+    # check Polygons
+    green_gdf = green_gdf.explode(index_parts=False)  # type: ignore
+    green_gdf.reset_index(drop=True, inplace=True)
+    # check Polygons
+    trees_gdf = trees_gdf.explode(index_parts=False)  # type: ignore
+    trees_gdf.reset_index(drop=True, inplace=True)
+    points_gdf = _extract_green_points(green_gdf, trees_gdf)
     # relabel area to green_area and trees_area
     green_idx = points_gdf["cat"] == "green"
     trees_idx = points_gdf["cat"] == "trees"
@@ -378,13 +460,15 @@ def process_green(cn: CityNetwork, green_gdf: gpd.GeoDataFrame, trees_gdf: gpd.G
     points_gdf["trees_area"] = np.where(trees_idx, points_gdf["area"], 0.0)
     points_gdf = points_gdf.drop(columns=["area"])
     # compute accessibilities
-    cn, points_gdf = cn.compute_accessibilities(
+    cn = cn.compute_accessibilities(
         points_gdf,  # type: ignore
         landuse_column_label="cat",
         accessibility_keys=["green", "trees"],
         distances=DISTANCES_GREEN_REACH,
         data_id_col="fid",  # deduplicate
+        decay_fn=DECAYS,
     )
+    _restore_column_order(cn.nodes_gdf)
     # drop - aggregation columns since these are not meaningful for interpolated aggs - only using distances
     nodes_gdf = cn.nodes_gdf
     nodes_gdf.drop(
@@ -405,12 +489,14 @@ def process_green(cn: CityNetwork, green_gdf: gpd.GeoDataFrame, trees_gdf: gpd.G
     # sum areas within buffer distances
     points_gdf["green_area"] = points_gdf["green_area"] / (1000**2)  # m2 to km2
     points_gdf["trees_area"] = points_gdf["trees_area"] / (1000**2)  # m2 to km2
-    cn, points_gdf = cn.compute_stats(
+    cn = cn.compute_stats(
         data_gdf=points_gdf,
         stats_column_labels=["green_area", "trees_area"],
         distances=DISTANCES_GREEN_AGG,
         data_id_col="fid",  # deduplicate
+        decay_fn=DECAYS,
     )
+    _restore_column_order(cn.nodes_gdf)
     # drop unnecessary columns
     for area_col in ["green_area", "trees_area"]:
         trim_columns = []
